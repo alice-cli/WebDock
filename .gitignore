@@ -1,0 +1,31 @@
+# Build
+.build/
+*.xcodeproj
+.swiftpm/
+WebDock.app/
+*.dSYM/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Local secrets / signing (never commit)
+**/Application Support/WebDock/
+*.keychain
+*.keychain-db
+.sign-pass
+.sign-hash
+
+# Generated icon intermediates (rebuilt by build_app.sh)
+Assets/AppIcon.iconset/
+Assets/favicon-32.b64.txt
+
+# Backup / work images
+MacRemote.with-white-bg.png
+*.padded-transparent.png
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*~
