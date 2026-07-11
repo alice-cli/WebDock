@@ -26,10 +26,26 @@ jobs:
 
       - name: Select Xcode
         run: |
-          # 사용 가능한 최신 Xcode
-          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer || true
+          set -euo pipefail
+          # Prefer Xcode 16+ (Swift 6) when present; otherwise latest Xcode.app
+          for c in \
+            /Applications/Xcode_16.4.app \
+            /Applications/Xcode_16.3.app \
+            /Applications/Xcode_16.2.app \
+            /Applications/Xcode_16.1.app \
+            /Applications/Xcode_16.0.app \
+            /Applications/Xcode_16.app \
+            /Applications/Xcode.app
+          do
+            if [[ -d "$c" ]]; then
+              sudo xcode-select -s "$c/Contents/Developer"
+              echo "Selected $c"
+              break
+            fi
+          done
           xcodebuild -version
           swift --version
+          ls /Applications | grep -i xcode || true
 
       - name: Resolve version
         id: ver
