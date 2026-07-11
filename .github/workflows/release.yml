@@ -62,31 +62,46 @@ jobs:
           echo "version=$VER" >> "$GITHUB_OUTPUT"
           echo "Release version: $VER"
 
-      - name: Import Developer ID certificate
+      - name: Import Developer ID certificates (Application + Installer)
         env:
           APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_INSTALLER_CERTIFICATE_BASE64: ${{ secrets.APPLE_INSTALLER_CERTIFICATE_BASE64 }}
+          APPLE_INSTALLER_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_INSTALLER_CERTIFICATE_PASSWORD }}
         run: |
           set -euo pipefail
           if [[ -z "${APPLE_CERTIFICATE_BASE64:-}" ]]; then
             echo "Missing secret APPLE_CERTIFICATE_BASE64"
             exit 1
           fi
-          CERT_PATH="$RUNNER_TEMP/developer_id.p12"
           KEYCHAIN_PATH="$RUNNER_TEMP/webdock.keychain-db"
           KEYCHAIN_PASS="$(openssl rand -base64 32)"
-          echo "$APPLE_CERTIFICATE_BASE64" | base64 --decode > "$CERT_PATH"
           security create-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN_PATH"
-          security import "$CERT_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" \
+
+          APP_P12="$RUNNER_TEMP/developer_id_app.p12"
+          echo "$APPLE_CERTIFICATE_BASE64" | base64 --decode > "$APP_P12"
+          security import "$APP_P12" -P "$APPLE_CERTIFICATE_PASSWORD" \
             -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          rm -f "$APP_P12"
+
+          if [[ -n "${APPLE_INSTALLER_CERTIFICATE_BASE64:-}" ]]; then
+            INST_P12="$RUNNER_TEMP/developer_id_installer.p12"
+            echo "$APPLE_INSTALLER_CERTIFICATE_BASE64" | base64 --decode > "$INST_P12"
+            security import "$INST_P12" -P "$APPLE_INSTALLER_CERTIFICATE_PASSWORD" \
+              -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+            rm -f "$INST_P12"
+            echo "Installer certificate imported"
+          else
+            echo "WARNING: no Installer certificate secret — .pkg will be skipped"
+          fi
+
           security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | sed -e 's/"//g')
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASS" "$KEYCHAIN_PATH"
-          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+          security find-identity -v "$KEYCHAIN_PATH"
           echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
           echo "KEYCHAIN_PASS=$KEYCHAIN_PASS" >> "$GITHUB_ENV"
-          rm -f "$CERT_PATH"
 
       - name: Write App Store Connect API key
         env:
@@ -153,14 +168,70 @@ jobs:
           OUT="dist/WebDock-macOS-${VER}.zip"
           ditto -c -k --keepParent WebDock.app "$OUT"
           ls -lh dist/
-          echo "ASSET_PATH=$OUT" >> "$GITHUB_ENV"
-          echo "ASSET_NAME=WebDock-macOS-${VER}.zip" >> "$GITHUB_ENV"
+
+      - name: Build signed .pkg installer
+        env:
+          APPLE_INSTALLER_IDENTITY: ${{ secrets.APPLE_INSTALLER_IDENTITY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          VER="${{ steps.ver.outputs.version }}"
+          security unlock-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN_PATH"
+
+          if ! security find-identity -v "$KEYCHAIN_PATH" | grep -q "Developer ID Installer"; then
+            echo "No Developer ID Installer identity — skipping .pkg"
+            exit 0
+          fi
+
+          INST_ID="${APPLE_INSTALLER_IDENTITY:-Developer ID Installer: jaehoon oh (ABSDM8J4UQ)}"
+          PKG_ROOT="$RUNNER_TEMP/pkgroot"
+          rm -rf "$PKG_ROOT"
+          mkdir -p "$PKG_ROOT/Applications"
+          # Copy notarized app into payload
+          ditto WebDock.app "$PKG_ROOT/Applications/WebDock.app"
+
+          COMPONENT_PKG="$RUNNER_TEMP/WebDock-component.pkg"
+          UNSIGNED_PKG="$RUNNER_TEMP/WebDock-unsigned.pkg"
+          SIGNED_PKG="dist/WebDock-macOS-${VER}.pkg"
+
+          # component package → product archive
+          pkgbuild \
+            --root "$PKG_ROOT" \
+            --identifier com.poc.webdock \
+            --version "$VER" \
+            --install-location / \
+            "$COMPONENT_PKG"
+
+          productbuild \
+            --package "$COMPONENT_PKG" \
+            "$UNSIGNED_PKG"
+
+          productsign \
+            --sign "$INST_ID" \
+            --keychain "$KEYCHAIN_PATH" \
+            "$UNSIGNED_PKG" \
+            "$SIGNED_PKG"
+
+          echo "Notarizing pkg…"
+          xcrun notarytool submit "$SIGNED_PKG" \
+            --key "$API_KEY_PATH" \
+            --key-id "$APPLE_API_KEY_ID" \
+            --issuer "$APPLE_API_ISSUER_ID" \
+            --wait
+
+          xcrun stapler staple "$SIGNED_PKG"
+          xcrun stapler validate "$SIGNED_PKG" || true
+          pkgutil --check-signature "$SIGNED_PKG" || true
+          ls -lh dist/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: WebDock-macOS-${{ steps.ver.outputs.version }}
-          path: dist/WebDock-macOS-*.zip
+          path: |
+            dist/WebDock-macOS-*.zip
+            dist/WebDock-macOS-*.pkg
           if-no-files-found: error
 
       - name: Create GitHub Release
@@ -171,59 +242,46 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
-          files: dist/WebDock-macOS-*.zip
+          files: |
+            dist/WebDock-macOS-*.zip
+            dist/WebDock-macOS-*.pkg
           body: |
             ## WebDock v${{ steps.ver.outputs.version }}
 
-            Pre-built **macOS 14+** app · `WebDock-macOS-${{ steps.ver.outputs.version }}.zip`
+            Pre-built **macOS 14+** builds:
+
+            | File | Use |
+            |------|-----|
+            | **`WebDock-macOS-${{ steps.ver.outputs.version }}.pkg`** | Installer → installs to **Applications** |
+            | **`WebDock-macOS-${{ steps.ver.outputs.version }}.zip`** | Unzip and run `WebDock.app` |
 
             **Docs:** [EN](https://github.com/alice-cli/WebDock/blob/main/README.md) · [KO](https://github.com/alice-cli/WebDock/blob/main/docs/README.ko.md) · [JA](https://github.com/alice-cli/WebDock/blob/main/docs/README.ja.md) · [ZH](https://github.com/alice-cli/WebDock/blob/main/docs/README.zh.md) · [DE](https://github.com/alice-cli/WebDock/blob/main/docs/README.de.md) · [FR](https://github.com/alice-cli/WebDock/blob/main/docs/README.fr.md)
 
             ---
 
             ### English — Install
-            1. Download **WebDock-macOS-${{ steps.ver.outputs.version }}.zip**
-            2. Unzip → open **WebDock.app**
-            3. System Settings → **Privacy & Security** → enable **Screen Recording** and **Accessibility** for WebDock
-            4. In the app: start server (port `8080`), optional access token
-            5. Browser: `http://127.0.0.1:8080` → select a window
+            **Option A (pkg):** open **WebDock-macOS-….pkg** → follow installer → app in **Applications**  
+            **Option B (zip):** unzip → open **WebDock.app**  
+            Then: System Settings → **Screen Recording** + **Accessibility** → start server in app (port `8080`) → browser `http://127.0.0.1:8080`
 
             ### 한국어 — 설치
-            1. **WebDock-macOS-${{ steps.ver.outputs.version }}.zip** 다운로드
-            2. 압축 해제 → **WebDock.app** 실행
-            3. **시스템 설정 → 개인정보 보호 및 보안** → **화면 기록** · **손쉬운 사용** 허용
-            4. 앱에서 서버 시작 (포트 `8080`), 필요 시 토큰
-            5. 브라우저 `http://127.0.0.1:8080` → 창 선택
+            **pkg:** **WebDock-macOS-….pkg** 실행 → **응용 프로그램**에 설치  
+            **zip:** 압축 해제 후 **WebDock.app** 실행  
+            이후: **화면 기록** · **손쉬운 사용** 허용 → 앱에서 서버 켜기 → `http://127.0.0.1:8080`
 
-            ### 日本語 — インストール
-            1. **WebDock-macOS-${{ steps.ver.outputs.version }}.zip** をダウンロード
-            2. 解凍 → **WebDock.app** を開く
-            3. **画面収録** と **アクセシビリティ** を許可
-            4. サーバー開始（ポート `8080`）
-            5. ブラウザ `http://127.0.0.1:8080`
+            ### 日本語
+            **pkg** でインストール（アプリケーション）または **zip** を展開。画面収録・アクセシビリティを許可 → サーバー開始 → `http://127.0.0.1:8080`
 
-            ### 中文 — 安装
-            1. 下载 **WebDock-macOS-${{ steps.ver.outputs.version }}.zip**
-            2. 解压并运行 **WebDock.app**
-            3. 允许 **屏幕录制** 与 **辅助功能**
-            4. 启动服务器（端口 `8080`）
-            5. 浏览器打开 `http://127.0.0.1:8080`
+            ### 中文
+            **pkg** 安装到“应用程序”，或解压 **zip**。允许屏幕录制与辅助功能 → 启动服务器 → `http://127.0.0.1:8080`
 
-            ### Deutsch — Installation
-            1. **WebDock-macOS-${{ steps.ver.outputs.version }}.zip** laden
-            2. Entpacken → **WebDock.app** starten
-            3. **Bildschirmaufnahme** + **Bedienungshilfen** erlauben
-            4. Server starten (Port `8080`)
-            5. Browser: `http://127.0.0.1:8080`
+            ### Deutsch
+            **pkg** (Programme) oder **zip**. Bildschirmaufnahme + Bedienungshilfen → Server starten → `http://127.0.0.1:8080`
 
-            ### Français — Installation
-            1. Télécharger **WebDock-macOS-${{ steps.ver.outputs.version }}.zip**
-            2. Décompresser → lancer **WebDock.app**
-            3. Autoriser **Enregistrement de l’écran** et **Accessibilité**
-            4. Démarrer le serveur (port `8080`)
-            5. Navigateur : `http://127.0.0.1:8080`
+            ### Français
+            **pkg** (Applications) ou **zip**. Enregistrement d’écran + Accessibilité → démarrer le serveur → `http://127.0.0.1:8080`
 
             ---
-            **Web UI languages:** EN · KO · JA · ZH · DE · FR (header menu)
+            **Web UI languages:** EN · KO · JA · ZH · DE · FR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

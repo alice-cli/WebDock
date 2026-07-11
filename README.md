@@ -44,15 +44,16 @@ The **web UI** also supports EN / KO / JA / ZH / DE / FR (language menu in the h
 Easiest way for most users — no Xcode required.
 
 1. Open [**Releases**](https://github.com/alice-cli/WebDock/releases)
-2. Download **`WebDock-macOS-*.zip`** (e.g. `WebDock-macOS-0.1.2.zip`)
-3. Unzip → double-click **`WebDock.app`**
-4. System Settings → **Privacy & Security**
+2. Download either:
+   - **`WebDock-macOS-*.pkg`** — installer → places app in **Applications**
+   - **`WebDock-macOS-*.zip`** — unzip and run `WebDock.app`
+3. System Settings → **Privacy & Security**
    - **Screen Recording** → enable WebDock  
    - **Accessibility** → enable WebDock  
-5. In the app: start the server (default port **8080**), set a token if you want  
-6. Browser: `http://127.0.0.1:8080` → pick a window  
+4. In the app: turn the **Server** switch **ON** (default off; if left on, auto-starts next launch)
+5. Browser: `http://127.0.0.1:8080` → pick a window  
 
-Release notes on each tag include install steps in **EN / KO / JA / ZH / DE / FR**.
+Release notes include install steps in **EN / KO / JA / ZH / DE / FR**.
 
 ### From source
 
