@@ -39,12 +39,18 @@ L’**interface web** gère EN / KO / JA / ZH / DE / FR (menu langue en en-tête
 
 ## Installation
 
-### Releases
+### Releases (binaire · recommandé)
 
-1. [Releases](https://github.com/alice-cli/WebDock/releases)
-2. Télécharger `WebDock-macOS-*.zip`
-3. Décompresser et lancer `WebDock.app`
-4. Autoriser Enregistrement de l’écran + Accessibilité
+Sans Xcode.
+
+1. [**Releases**](https://github.com/alice-cli/WebDock/releases)
+2. Télécharger **`WebDock-macOS-*.zip`**
+3. Décompresser → lancer **`WebDock.app`**
+4. Autoriser **Enregistrement de l’écran** et **Accessibilité**
+5. Démarrer le serveur (port **8080**)
+6. Navigateur : `http://127.0.0.1:8080`
+
+Les notes de version incluent EN / KO / JA / ZH / DE / FR.
 
 ### Depuis les sources
 

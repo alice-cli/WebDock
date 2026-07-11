@@ -39,12 +39,18 @@ Web UI 支持 EN / KO / JA / ZH / DE / FR（页眉语言菜单）。
 
 ## 安装
 
-### Releases
+### Releases（预构建 · 推荐）
 
-1. 打开 [Releases](https://github.com/alice-cli/WebDock/releases)
-2. 下载 `WebDock-macOS-*.zip`
-3. 解压并运行 `WebDock.app`
-4. 在系统设置中允许 **屏幕录制** 与 **辅助功能**
+无需 Xcode。
+
+1. 打开 [**Releases**](https://github.com/alice-cli/WebDock/releases)
+2. 下载 **`WebDock-macOS-*.zip`**
+3. 解压 → 运行 **`WebDock.app`**
+4. 允许 **屏幕录制** 与 **辅助功能**
+5. 在应用中启动服务器（端口 **8080**）
+6. 浏览器 `http://127.0.0.1:8080`
+
+每个 Release 说明含 **EN / KO / JA / ZH / DE / FR** 安装步骤。
 
 ### 从源码
 

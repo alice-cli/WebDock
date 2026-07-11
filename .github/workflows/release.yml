@@ -175,17 +175,55 @@ jobs:
           body: |
             ## WebDock v${{ steps.ver.outputs.version }}
 
-            macOS 14+ 용 공증(Notarized) 빌드입니다.
+            Pre-built **macOS 14+** app · `WebDock-macOS-${{ steps.ver.outputs.version }}.zip`
 
-            ### 설치
-            1. 아래 **WebDock-macOS-….zip** 다운로드
-            2. 압축 해제 → `WebDock.app`
-            3. 실행 (Gatekeeper 통과 · Developer ID 공증)
-            4. **시스템 설정 → 개인정보 보호 및 보안**
-               - 화면 기록
-               - 손쉬운 사용
-            5. 브라우저에서 `http://127.0.0.1:8080` (설정에서 포트/토큰 확인)
+            **Docs:** [EN](https://github.com/alice-cli/WebDock/blob/main/README.md) · [KO](https://github.com/alice-cli/WebDock/blob/main/docs/README.ko.md) · [JA](https://github.com/alice-cli/WebDock/blob/main/docs/README.ja.md) · [ZH](https://github.com/alice-cli/WebDock/blob/main/docs/README.zh.md) · [DE](https://github.com/alice-cli/WebDock/blob/main/docs/README.de.md) · [FR](https://github.com/alice-cli/WebDock/blob/main/docs/README.fr.md)
 
-            소스에서 직접 빌드: `./install_home.sh` (README 참고)
+            ---
+
+            ### English — Install
+            1. Download **WebDock-macOS-${{ steps.ver.outputs.version }}.zip**
+            2. Unzip → open **WebDock.app**
+            3. System Settings → **Privacy & Security** → enable **Screen Recording** and **Accessibility** for WebDock
+            4. In the app: start server (port `8080`), optional access token
+            5. Browser: `http://127.0.0.1:8080` → select a window
+
+            ### 한국어 — 설치
+            1. **WebDock-macOS-${{ steps.ver.outputs.version }}.zip** 다운로드
+            2. 압축 해제 → **WebDock.app** 실행
+            3. **시스템 설정 → 개인정보 보호 및 보안** → **화면 기록** · **손쉬운 사용** 허용
+            4. 앱에서 서버 시작 (포트 `8080`), 필요 시 토큰
+            5. 브라우저 `http://127.0.0.1:8080` → 창 선택
+
+            ### 日本語 — インストール
+            1. **WebDock-macOS-${{ steps.ver.outputs.version }}.zip** をダウンロード
+            2. 解凍 → **WebDock.app** を開く
+            3. **画面収録** と **アクセシビリティ** を許可
+            4. サーバー開始（ポート `8080`）
+            5. ブラウザ `http://127.0.0.1:8080`
+
+            ### 中文 — 安装
+            1. 下载 **WebDock-macOS-${{ steps.ver.outputs.version }}.zip**
+            2. 解压并运行 **WebDock.app**
+            3. 允许 **屏幕录制** 与 **辅助功能**
+            4. 启动服务器（端口 `8080`）
+            5. 浏览器打开 `http://127.0.0.1:8080`
+
+            ### Deutsch — Installation
+            1. **WebDock-macOS-${{ steps.ver.outputs.version }}.zip** laden
+            2. Entpacken → **WebDock.app** starten
+            3. **Bildschirmaufnahme** + **Bedienungshilfen** erlauben
+            4. Server starten (Port `8080`)
+            5. Browser: `http://127.0.0.1:8080`
+
+            ### Français — Installation
+            1. Télécharger **WebDock-macOS-${{ steps.ver.outputs.version }}.zip**
+            2. Décompresser → lancer **WebDock.app**
+            3. Autoriser **Enregistrement de l’écran** et **Accessibilité**
+            4. Démarrer le serveur (port `8080`)
+            5. Navigateur : `http://127.0.0.1:8080`
+
+            ---
+            **Web UI languages:** EN · KO · JA · ZH · DE · FR (header menu)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

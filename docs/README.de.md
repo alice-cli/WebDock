@@ -39,12 +39,18 @@ Die **Web-UI** unterstützt EN / KO / JA / ZH / DE / FR (Sprachmenü in der Kopf
 
 ## Installation
 
-### Releases
+### Releases (vorgefertigte App · empfohlen)
 
-1. [Releases](https://github.com/alice-cli/WebDock/releases)
-2. `WebDock-macOS-*.zip` laden
-3. Entpacken, `WebDock.app` starten
-4. Bildschirmaufnahme + Bedienungshilfen erlauben
+Kein Xcode nötig.
+
+1. [**Releases**](https://github.com/alice-cli/WebDock/releases)
+2. **`WebDock-macOS-*.zip`** laden
+3. Entpacken → **`WebDock.app`** starten
+4. **Bildschirmaufnahme** + **Bedienungshilfen** erlauben
+5. Server starten (Port **8080**)
+6. Browser: `http://127.0.0.1:8080`
+
+Release-Notizen mit Schritten in **EN / KO / JA / ZH / DE / FR**.
 
 ### Aus dem Quellcode
 

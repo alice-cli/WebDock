@@ -39,12 +39,20 @@
 
 ## 설치 (권장)
 
-### Releases
+### Releases (빌드된 앱 · 권장)
 
-1. [Releases](https://github.com/alice-cli/WebDock/releases) 열기  
-2. `WebDock-macOS-*.zip` 다운로드  
-3. 압축 해제 후 `WebDock.app` 실행  
-4. 시스템 설정에서 **화면 기록** · **손쉬운 사용** 허용  
+Xcode 없이 바로 쓸 수 있습니다.
+
+1. [**Releases**](https://github.com/alice-cli/WebDock/releases) 열기  
+2. **`WebDock-macOS-*.zip`** 다운로드 (예: `WebDock-macOS-0.1.2.zip`)  
+3. 압축 해제 → **`WebDock.app`** 실행  
+4. **시스템 설정 → 개인정보 보호 및 보안**  
+   - **화면 기록** → WebDock 허용  
+   - **손쉬운 사용** → WebDock 허용  
+5. 앱에서 서버 시작 (기본 포트 **8080**), 필요 시 토큰  
+6. 브라우저 `http://127.0.0.1:8080` → 창 선택  
+
+각 릴리스 본문에 **한·영·일·중·독·프** 설치 안내가 함께 있습니다.
 
 ### 소스에서
 
