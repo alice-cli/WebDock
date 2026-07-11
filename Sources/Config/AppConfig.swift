@@ -3,7 +3,8 @@ import Security
 
 /// Persistent WebDock settings (INI under Application Support).
 struct AppConfig: Equatable {
-    var serverEnabled: Bool = true
+    /// User preference: whether the server should run. Default off — start only when the user turns it on.
+    var serverEnabled: Bool = false
     var port: UInt16 = 8080
     /// Bind on all interfaces (LAN). When false, loopback only.
     var allowLAN: Bool = false

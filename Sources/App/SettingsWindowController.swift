@@ -264,12 +264,21 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
     private func updateStatusLabel(running: Bool?) {
         let enabled = serverToggle.state == .on
         if let running {
-            statusLabel.stringValue = running
-                ? "상태: 서버 실행 중"
-                : (enabled ? "상태: 서버 중지됨 (적용하면 시작)" : "상태: 서버 꺼짐")
-            statusLabel.textColor = running ? .systemGreen : .secondaryLabelColor
+            if running {
+                statusLabel.stringValue = "상태: 서버 실행 중 — 끄려면 토글을 끄세요"
+                statusLabel.textColor = .systemGreen
+            } else if enabled {
+                // Toggle on but not running yet (e.g. just launched) — one flip or Apply starts it
+                statusLabel.stringValue = "상태: 대기 — 토글을 끄고 다시 켜거나, 적용을 누르면 시작"
+                statusLabel.textColor = .systemOrange
+            } else {
+                statusLabel.stringValue = "상태: 서버 꺼짐 — 토글을 켜면 시작됩니다"
+                statusLabel.textColor = .secondaryLabelColor
+            }
         } else {
-            statusLabel.stringValue = enabled ? "상태: 저장 및 적용 후 시작됩니다" : "상태: 서버 꺼짐"
+            statusLabel.stringValue = enabled
+                ? "상태: 토글을 켜면 서버가 시작됩니다"
+                : "상태: 서버 꺼짐"
             statusLabel.textColor = .secondaryLabelColor
         }
     }

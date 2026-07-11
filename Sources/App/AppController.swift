@@ -23,15 +23,11 @@ final class AppController: NSObject, NSApplicationDelegate {
         Permissions.requestAll()
         setupStatusItem()
 
-        if !AppConfig.exists {
-            openSettings(isFirstRun: true)
-        } else {
-            config = AppConfig.loadOrDefault()
-            applyEnvOverrides()
-            startServerIfEnabled()
-            // Still show settings so user can toggle server / token without hunting.
-            openSettings(isFirstRun: false)
-        }
+        config = AppConfig.loadOrDefault()
+        applyEnvOverrides()
+        // Do NOT auto-start the HTTP server — user turns it on from settings or menu.
+        updateStatusItem()
+        openSettings(isFirstRun: !AppConfig.exists)
     }
 
     // MARK: - NSApplicationDelegate
@@ -61,13 +57,33 @@ final class AppController: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         menu.addItem(withTitle: "설정 열기…", action: #selector(openSettingsMenu), keyEquivalent: ",")
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(withTitle: "서버 시작", action: #selector(startServerMenu), keyEquivalent: "")
-        menu.addItem(withTitle: "서버 중지", action: #selector(stopServerMenu), keyEquivalent: "")
+        let startItem = NSMenuItem(title: "서버 시작", action: #selector(startServerMenu), keyEquivalent: "")
+        startItem.tag = 100
+        let stopItem = NSMenuItem(title: "서버 중지", action: #selector(stopServerMenu), keyEquivalent: "")
+        stopItem.tag = 101
+        menu.addItem(startItem)
+        menu.addItem(stopItem)
         menu.addItem(NSMenuItem.separator())
         menu.addItem(withTitle: "종료", action: #selector(quitApp), keyEquivalent: "q")
         menu.items.forEach { $0.target = self }
         item.menu = menu
         statusItem = item
+        updateStatusItem()
+    }
+
+    /// Menu bar title + enable start/stop according to whether the server is running.
+    private func updateStatusItem() {
+        let running = server != nil
+        if let button = statusItem?.button {
+            button.title = running ? "WebDock ●" : "WebDock ○"
+            button.toolTip = running
+                ? "WebDock — 서버 실행 중 (클릭: 설정)"
+                : "WebDock — 서버 꺼짐 (클릭: 설정에서 시작)"
+        }
+        if let menu = statusItem?.menu {
+            menu.item(withTag: 100)?.isEnabled = !running // 시작
+            menu.item(withTag: 101)?.isEnabled = running  // 중지
+        }
     }
 
     @objc private func statusItemClicked(_ sender: Any?) {
@@ -94,6 +110,7 @@ final class AppController: NSObject, NSApplicationDelegate {
         startServerIfEnabled()
         settingsWC?.setServerRunning(server != nil)
         settingsWC?.syncServerToggle(enabled: true)
+        updateStatusItem()
         bringSettingsToFront()
     }
 
@@ -104,6 +121,7 @@ final class AppController: NSObject, NSApplicationDelegate {
         print("WebDock server stopped")
         settingsWC?.setServerRunning(false)
         settingsWC?.syncServerToggle(enabled: false)
+        updateStatusItem()
         bringSettingsToFront()
     }
 
@@ -132,6 +150,7 @@ final class AppController: NSObject, NSApplicationDelegate {
 
         bringSettingsToFront()
         settingsWC?.setServerRunning(server != nil)
+        updateStatusItem()
     }
 
     private func bringSettingsToFront() {
@@ -154,9 +173,10 @@ final class AppController: NSObject, NSApplicationDelegate {
         if config.serverEnabled {
             startServerIfEnabled()
         } else {
-            print("WebDock: server disabled")
+            print("WebDock: server off (user disabled)")
         }
         settingsWC?.setServerRunning(server != nil)
+        updateStatusItem()
         // Keep window on top after apply (restart can steal focus).
         DispatchQueue.main.async { [weak self] in
             self?.bringSettingsToFront()
@@ -181,6 +201,7 @@ final class AppController: NSObject, NSApplicationDelegate {
     private func startServerIfEnabled() {
         guard config.serverEnabled else {
             print("WebDock: server disabled in config")
+            updateStatusItem()
             return
         }
         stopServer()
@@ -188,9 +209,12 @@ final class AppController: NSObject, NSApplicationDelegate {
             let s = try Server(config: config)
             s.start()
             server = s
+            updateStatusItem()
             printConfigSummary()
         } catch {
             FileHandle.standardError.write(Data("server error: \(error)\n".utf8))
+            server = nil
+            updateStatusItem()
             let alert = NSAlert(error: error)
             alert.messageText = "서버 시작 실패"
             alert.runModal()
@@ -201,6 +225,7 @@ final class AppController: NSObject, NSApplicationDelegate {
     private func stopServer() {
         server?.stop()
         server = nil
+        updateStatusItem()
     }
 
     private func printConfigSummary() {
