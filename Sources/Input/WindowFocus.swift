@@ -46,14 +46,14 @@ enum WindowFocus {
                 _ = app?.unhide()
             }
             // Steal focus from whatever is covering us (including WebDock itself).
-            if #available(macOS 14.0, *) {
-                if let app {
-                    // Prefer yielding from WebDock → target so activation actually switches.
-                    _ = NSRunningApplication.current.yieldActivation(to: app)
+            if let app {
+                if #available(macOS 14.0, *) {
+                    // NSApplication.yieldActivation helps switch away from WebDock.
+                    NSApp.yieldActivation(to: app)
                     _ = app.activate()
+                } else {
+                    _ = app.activate(options: [.activateIgnoringOtherApps])
                 }
-            } else {
-                _ = app?.activate(options: [.activateIgnoringOtherApps])
             }
             raiseWindow(pid: pid, windowID: windowID, title: title)
             raiseWindow(pid: pid, windowID: windowID, title: title)
@@ -76,7 +76,7 @@ enum WindowFocus {
             let retry = {
                 if let app {
                     if #available(macOS 14.0, *) {
-                        _ = NSRunningApplication.current.yieldActivation(to: app)
+                        NSApp.yieldActivation(to: app)
                         _ = app.activate()
                     } else {
                         _ = app.activate(options: [.activateIgnoringOtherApps])
