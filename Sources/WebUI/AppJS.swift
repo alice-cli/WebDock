@@ -513,8 +513,8 @@ function renderQuick(){
       e.preventDefault();
       const ok = await showConfirm({
         title: t('unpin'),
-        body: item.name + '을(를) 퀵 런처에서 제거할까요?',
-        okText: '제거',
+        body: item.name + ' — ' + t('unpinBody'),
+        okText: t('remove'),
         danger: true
       });
       if (!ok) return;
@@ -620,19 +620,20 @@ function applyMetrics(m){
   }
   if (diskEl) {
     diskEl.setAttribute('data-tip',
-      '디스크  ' + disk.toFixed(1) + '% · ' + (m.diskUsedGB ?? '?') + ' / ' + (m.diskTotalGB ?? '?') + ' GB');
+      t('diskLine') + '  ' + disk.toFixed(1) + '% · ' + (m.diskUsedGB ?? '?') + ' / ' + (m.diskTotalGB ?? '?') + ' GB');
     bindMetricHover(diskEl);
   }
 }
 
 function renderClients(list){
+  window._lastClients = list || [];
   const box = document.getElementById('clientList');
   const cnt = document.getElementById('clientCount');
   if (cnt) cnt.textContent = String((list || []).length);
   if (!box) return;
   box.innerHTML = '';
   if (!list || !list.length){
-    box.innerHTML = '<div class="client-empty">접속 중인 클라이언트 없음</div>';
+    box.innerHTML = '<div class="client-empty">'+t('noClients')+'</div>';
     return;
   }
   list.forEach(c => {
@@ -641,7 +642,7 @@ function renderClients(list){
     const ip = esc(c.ip || '?');
     const app = (c.app || '').trim();
     const title = (c.title || '').trim();
-    let view = '화면 미선택';
+    let view = t('noView');
     if (app) view = app + (title ? ' — ' + title : '');
     row.innerHTML = '<span class="cip">'+ip+'</span><span class="cview" title="'+esc(view)+'">'+esc(view)+'</span>';
     box.appendChild(row);
@@ -797,7 +798,7 @@ function renderItemsOnly(){
   const filtered = filteredWindows();
   items.innerHTML = '';
   if (!winList.length){
-    items.innerHTML = '<div class="hint">열린 창이 없습니다.<br>앱 탭에서 앱을 실행하세요.</div>';
+    items.innerHTML = '<div class="hint">'+t('noWindows')+'</div>';
     return;
   }
   if (!filtered.length){
@@ -809,12 +810,12 @@ function renderItemsOnly(){
     el.type = 'button';
     el.className = 'item' + (w.id===activeId ? ' active' : '');
     el.dataset.key = String(w.id);
-    const live = w.id===activeId ? '<span class="live-dot" title="스트리밍 중"></span>' : '';
+    const live = w.id===activeId ? '<span class="live-dot" title="'+t('live')+'"></span>' : '';
     const size = (w.w && w.h) ? '<span class="meta">'+w.w+'×'+w.h+'</span>' : '';
     const isDisplay = isDisplayRouteId(w.id);
-    el.innerHTML = '<span class="drag-handle" title="드래그하여 순서 변경">⠿</span>'
+    el.innerHTML = '<span class="drag-handle" title="'+t('dragReorder')+'">⠿</span>'
       + iconHTML(w.name, w.path)
-      + '<span class="info"><span class="name">'+esc(w.name)+'</span><span class="title">'+esc(w.title||'제목 없음')+'</span>'+size+'</span>'
+      + '<span class="info"><span class="name">'+esc(w.name)+'</span><span class="title">'+esc(w.title||t('noTitle'))+'</span>'+size+'</span>'
       + live;
     const pin = document.createElement('button'); pin.type = 'button'; pin.className = 'act q'; pin.textContent = '☆'; pin.title = t('pinQuick');
     pin.draggable = false;
@@ -825,7 +826,7 @@ function renderItemsOnly(){
       neu.type = 'button';
       neu.className = 'act n';
       neu.textContent = '+';
-      neu.title = w.name + ' 새 창 열기';
+      neu.title = w.name + ' — ' + t('newWin');
       neu.draggable = false;
       neu.onclick = (ev) => {
         ev.stopPropagation();
@@ -840,14 +841,14 @@ function renderItemsOnly(){
       x.type = 'button';
       x.className = 'act x';
       x.textContent = '×';
-      x.title = '이 창만 닫기 (앱 전체 종료 아님)';
+      x.title = t('closeWin');
       x.draggable = false;
       x.onclick = async (ev) => {
         ev.stopPropagation();
         const ok = await showConfirm({
-          title: '창 닫기',
-          body: (w.title ? '[' + w.title + '] ' : '') + w.name + ' 창만 닫습니다. 같은 앱의 다른 창은 유지됩니다.',
-          okText: '창 닫기',
+          title: t('closeWinTitle'),
+          body: (w.title ? '[' + w.title + '] ' : '') + w.name + t('closeWinBody'),
+          okText: t('closeWinTitle'),
           danger: true
         });
         if (!ok) return;
@@ -910,7 +911,7 @@ function renderAppItems(){
     el.type = 'button';
     el.className = 'item';
     el.dataset.key = a.path;
-    el.innerHTML = '<span class="drag-handle" title="드래그하여 순서 변경">⠿</span>'
+    el.innerHTML = '<span class="drag-handle" title="'+t('dragReorder')+'">⠿</span>'
       + iconHTML(a.name, a.path)
       + '<span class="info"><span class="name">'+esc(a.name)+'</span></span>';
     const pin = document.createElement('button'); pin.type = 'button'; pin.className = 'act q'; pin.textContent = '☆'; pin.title = t('pinQuick');
@@ -921,7 +922,7 @@ function renderAppItems(){
     neu.type = 'button';
     neu.className = 'act n';
     neu.textContent = '+';
-    neu.title = a.name + ' 새 창/인스턴스';
+    neu.title = a.name + ' — ' + t('newWin');
     neu.draggable = false;
     neu.onclick = (ev) => {
       ev.stopPropagation();
@@ -1287,8 +1288,8 @@ function remoteModifiers(e){
 async function pasteClipboardToRemote(){
   try {
     if (navigator.clipboard && navigator.clipboard.readText) {
-      const t = await navigator.clipboard.readText();
-      if (t) { send({type:'text', value:t}); statusEl.textContent = t('paste')+' ('+t.length+')'; return; }
+      const clip = await navigator.clipboard.readText();
+      if (clip) { send({type:'text', value:clip}); statusEl.textContent = t('paste')+' ('+clip.length+')'; return; }
     }
   } catch (_) { /* clipboard denied → remote Cmd+V */ }
   send({type:'key', code:'KeyV', meta:true, ctrl:false, alt:false, shift:false});
@@ -1830,7 +1831,7 @@ function paintH264Frame(frame){
 
 function setupH264Decoder(m){
   if (typeof VideoDecoder === 'undefined') {
-    statusEl.textContent = '이 브라우저는 WebCodecs(H.264) 미지원 — JPG로 전환하세요';
+    statusEl.textContent = t('h264Unsupported');
     return;
   }
   try {
@@ -1863,7 +1864,7 @@ function setupH264Decoder(m){
       },
       error: (err) => {
         console.error('H264 decode', err);
-        statusEl.textContent = 'H.264 디코드 오류 — 키프레임 요청…';
+        statusEl.textContent = t('h264DecodeErr');
         h264WaitingKey = true;
         if (activeId != null) send({type:'keyframe', id: activeId});
       }
@@ -1878,11 +1879,11 @@ function setupH264Decoder(m){
     if (h264Desc && h264Desc.byteLength) cfg.description = h264Desc;
     h264Decoder.configure(cfg);
     h264Configured = true;
-    statusEl.textContent = 'H.264 ' + h264W + '×' + h264H + ' · 안정 모드';
+    statusEl.textContent = 'H.264 ' + h264W + '×' + h264H + ' · ' + t('h264Ok');
     if (activeId != null) send({type:'keyframe', id: activeId});
   } catch (err) {
     console.error(err);
-    statusEl.textContent = 'H.264 설정 실패 — JPG 사용';
+    statusEl.textContent = t('h264Fail');
     teardownH264();
   }
 }
@@ -1953,7 +1954,7 @@ function syncFormatButtons(f){
   const lab = document.getElementById('qLabel');
   if (q) {
     q.disabled = (f !== 'jpeg');
-    q.title = f === 'jpeg' ? 'JPEG 화질' : (f === 'png' ? 'PNG 무손실' : 'H.264 비트레이트는 서버 자동');
+    q.title = f === 'jpeg' ? t('jpegQ') : (f === 'png' ? t('pngLossless') : t('h264Auto'));
   }
   if (lab) lab.classList.toggle('dim', f !== 'jpeg');
 }
@@ -1963,7 +1964,7 @@ function setFormat(fmt){
   if (fmt === 'png') f = 'png';
   else if (fmt === 'h264' || fmt === 'avc') f = 'h264';
   if (f === 'h264' && typeof VideoDecoder === 'undefined') {
-    statusEl.textContent = 'WebCodecs 없음 — Chrome/Edge 최신 버전 필요';
+    statusEl.textContent = t('noWebCodecs');
     return;
   }
   streamFormat = f;
@@ -1971,21 +1972,21 @@ function setFormat(fmt){
   send({type:'format', value:f});
   syncFormatButtons(f);
   statusEl.textContent =
-    f === 'png' ? '포맷: PNG (무손실)' :
-    f === 'h264' ? '포맷: H.264 방송 (하드웨어)' :
-    '포맷: JPEG';
+    f === 'png' ? t('fmtPng') :
+    f === 'h264' ? t('fmtH264') :
+    t('fmtJpeg');
   if (f === 'h264' && activeId != null) send({type:'keyframe', id: activeId});
 }
 
-/** 빠름 / 균형 / 방송(H.264) */
+/** Fast / Balanced / Live (H.264) */
 function setPreset(name){
   const n = (name === 'fast' || name === 'broadcast') ? name : 'balanced';
   streamPreset = n;
   send({type:'preset', value:n});
   const map = {
-    fast: { q: 0.62, fmt: 'jpeg', label: '빠름 · JPEG 20fps' },
-    balanced: { q: 0.92, fmt: 'jpeg', label: '균형 · JPEG 30fps' },
-    broadcast: { q: 1.0, fmt: 'h264', label: '방송 · H.264 30fps 저지연 (하드웨어)' }
+    fast: { q: 0.62, fmt: 'jpeg', labelKey: 'presetFast' },
+    balanced: { q: 0.92, fmt: 'jpeg', labelKey: 'presetBal' },
+    broadcast: { q: 1.0, fmt: 'h264', labelKey: 'presetLive' }
   };
   const conf = map[n];
   ['preFast','preBal','preLive'].forEach(id => {
@@ -2001,7 +2002,7 @@ function setPreset(name){
   const qv = document.getElementById('qVal');
   if (q && conf.fmt === 'jpeg') { q.disabled = false; q.value = String(conf.q); }
   if (qv && conf.fmt === 'jpeg') qv.textContent = Math.round(conf.q * 100) + '%';
-  statusEl.textContent = conf.label;
+  statusEl.textContent = t(conf.labelKey);
   if (conf.fmt === 'h264' && activeId != null) send({type:'keyframe', id: activeId});
 }
 

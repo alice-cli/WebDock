@@ -2,7 +2,7 @@ import Foundation
 
 /// Browser UI strings: ko / en / ja / zh / de / fr
 let webDockI18nJS = """
-// ── i18n ──────────────────────────────────────────────
+// ── i18n (complete UI pack) ───────────────────────────
 const I18N = {
   ko: {
     menu:'목록', menuTitle:'창·앱 목록', sideTitle:'창 · 앱', close:'닫기',
@@ -29,7 +29,21 @@ const I18N = {
     imeKo:'현재: 한글 — 클릭하면 영문(A)', imeEn:'현재: 영문(A) — 클릭하면 한글',
     fitDevice:'화면: 기기 해상도 맞춤', fitAll:'화면: 전체 맞춤',
     resFit:'해상도 맞춤', qhint:'앱 탭에서 + 로 자주 쓰는 앱을 고정하세요',
-    qhintEdit:' · 삭제는 편집', lang:'언어', disk:'디스크'
+    qhintEdit:' · 삭제는 편집', lang:'언어', disk:'디스크',
+    remove:'제거', unpinBody:'을(를) 퀵 런처에서 제거할까요?',
+    closeWinTitle:'창 닫기', closeWinBody:' 창만 닫습니다. 같은 앱의 다른 창은 유지됩니다.',
+    noWindows:'열린 창이 없습니다.<br>앱 탭에서 앱을 실행하세요.',
+    noClients:'접속 중인 클라이언트 없음', noView:'화면 미선택',
+    noTitle:'제목 없음', dragReorder:'드래그하여 순서 변경', live:'스트리밍 중',
+    diskLine:'디스크',
+    fmtJpeg:'포맷: JPEG', fmtPng:'포맷: PNG (무손실)', fmtH264:'포맷: H.264 방송 (하드웨어)',
+    noWebCodecs:'WebCodecs 없음 — Chrome/Edge 최신 버전 필요',
+    h264Unsupported:'이 브라우저는 WebCodecs(H.264) 미지원 — JPG로 전환하세요',
+    h264DecodeErr:'H.264 디코드 오류 — 키프레임 요청…',
+    h264Ok:'H.264 안정 모드', h264Fail:'H.264 설정 실패 — JPG 사용',
+    presetFast:'빠름 · JPEG 20fps', presetBal:'균형 · JPEG 30fps',
+    presetLive:'방송 · H.264 30fps 저지연 (하드웨어)',
+    jpegQ:'JPEG 화질', pngLossless:'PNG 무손실', h264Auto:'H.264 비트레이트는 서버 자동'
   },
   en: {
     menu:'Menu', menuTitle:'Windows & apps', sideTitle:'Windows · Apps', close:'Close',
@@ -56,14 +70,28 @@ const I18N = {
     imeKo:'Hangul mode — click for Latin', imeEn:'Latin mode — click for Hangul',
     fitDevice:'View: fit device', fitAll:'View: fit all',
     resFit:'Resolution', qhint:'Pin apps from the Apps tab with +',
-    qhintEdit:' · edit to remove', lang:'Language', disk:'Disk'
+    qhintEdit:' · edit to remove', lang:'Language', disk:'Disk',
+    remove:'Remove', unpinBody:'Remove from quick launch?',
+    closeWinTitle:'Close window', closeWinBody:' will close. Other windows of the same app stay open.',
+    noWindows:'No open windows.<br>Launch an app from the Apps tab.',
+    noClients:'No connected clients', noView:'No screen selected',
+    noTitle:'Untitled', dragReorder:'Drag to reorder', live:'Streaming',
+    diskLine:'Disk',
+    fmtJpeg:'Format: JPEG', fmtPng:'Format: PNG (lossless)', fmtH264:'Format: H.264 (hardware)',
+    noWebCodecs:'No WebCodecs — need latest Chrome/Edge',
+    h264Unsupported:'Browser has no WebCodecs H.264 — switch to JPG',
+    h264DecodeErr:'H.264 decode error — requesting keyframe…',
+    h264Ok:'H.264 stable mode', h264Fail:'H.264 setup failed — use JPG',
+    presetFast:'Fast · JPEG 20fps', presetBal:'Balanced · JPEG 30fps',
+    presetLive:'Live · H.264 30fps low-latency',
+    jpegQ:'JPEG quality', pngLossless:'PNG lossless', h264Auto:'H.264 bitrate is automatic'
   },
   ja: {
     menu:'一覧', menuTitle:'ウィンドウとアプリ', sideTitle:'ウィンドウ · アプリ', close:'閉じる',
     quick:'クイック起動', edit:'編集', done:'完了', clients:'接続中',
     tabWin:'ウィンドウ', tabApp:'アプリ', emptyTitle:'ウィンドウを選択',
-    emptyBody:'<b>一覧</b>からウィンドウを選ぶか、<b>アプリ</b>から起動してください',
-    txtPh:'テキスト入力 · Enterで送信', send:'送信', imeTitle:'韓国語 / 英字',
+    emptyBody:'<b>一覧</b>からウィンドウを選ぶか、<b>アプリ</b>から起動',
+    txtPh:'テキスト · Enterで送信', send:'送信', imeTitle:'韓国語 / 英字',
     preFast:'高速', preBal:'バランス', preLive:'配信', quality:'画質',
     refresh:'一覧を更新', fit:'合わせる', zoomIn:'拡大', zoomOut:'縮小',
     clipAutoOn:'📋 自動', clipAutoOff:'📋 手動', clipPull:'取得',
@@ -75,7 +103,7 @@ const I18N = {
     pinQuick:'クイックに固定', unpin:'固定解除', newWin:'新しいウィンドウ',
     closeWin:'このウィンドウだけ閉じる', refreshList:'更新中…',
     streaming:'配信中', closing:'閉じています…', pinned:'固定済み', pinFail:'固定失敗',
-    launching:'起動中…', newInstance:'新しいウィンドウを開いています…',
+    launching:'起動中…', newInstance:'新しいウィンドウ…',
     paste:'貼り付け', pasteRemote:'リモート貼り付け',
     clipOn:'クリップボード自動 ON', clipOff:'クリップボード自動 OFF',
     clipPulling:'取得中…', clipEmpty:'クリップボードが空です',
@@ -83,7 +111,21 @@ const I18N = {
     imeKo:'ハングル — クリックで英字', imeEn:'英字 — クリックでハングル',
     fitDevice:'表示: 端末に合わせる', fitAll:'表示: 全体',
     resFit:'解像度', qhint:'アプリタブで + を押して固定',
-    qhintEdit:' · 編集で削除', lang:'言語', disk:'ディスク'
+    qhintEdit:' · 編集で削除', lang:'言語', disk:'ディスク',
+    remove:'削除', unpinBody:'をクイック起動から削除しますか？',
+    closeWinTitle:'ウィンドウを閉じる', closeWinBody:' だけ閉じます。同じアプリの他の窓は残ります。',
+    noWindows:'開いているウィンドウがありません。<br>アプリタブから起動してください。',
+    noClients:'接続中のクライアントなし', noView:'画面未選択',
+    noTitle:'無題', dragReorder:'ドラッグで並べ替え', live:'配信中',
+    diskLine:'ディスク',
+    fmtJpeg:'形式: JPEG', fmtPng:'形式: PNG（可逆）', fmtH264:'形式: H.264（ハードウェア）',
+    noWebCodecs:'WebCodecsなし — 最新Chrome/Edgeが必要',
+    h264Unsupported:'H.264非対応 — JPGに切替',
+    h264DecodeErr:'H.264デコードエラー — キーフレーム要求…',
+    h264Ok:'H.264 安定モード', h264Fail:'H.264設定失敗 — JPG使用',
+    presetFast:'高速 · JPEG 20fps', presetBal:'バランス · JPEG 30fps',
+    presetLive:'配信 · H.264 30fps 低遅延',
+    jpegQ:'JPEG画質', pngLossless:'PNG可逆', h264Auto:'H.264ビットレートは自動'
   },
   zh: {
     menu:'列表', menuTitle:'窗口与应用', sideTitle:'窗口 · 应用', close:'关闭',
@@ -110,7 +152,21 @@ const I18N = {
     imeKo:'韩文 — 点击切换英文', imeEn:'英文 — 点击切换韩文',
     fitDevice:'视图：适配设备', fitAll:'视图：全部适配',
     resFit:'分辨率', qhint:'在应用页用 + 固定常用应用',
-    qhintEdit:' · 编辑可删除', lang:'语言', disk:'磁盘'
+    qhintEdit:' · 编辑可删除', lang:'语言', disk:'磁盘',
+    remove:'移除', unpinBody:'要从快捷启动移除吗？',
+    closeWinTitle:'关闭窗口', closeWinBody:' 将关闭。同应用的其他窗口保留。',
+    noWindows:'没有打开的窗口。<br>请从应用页启动。',
+    noClients:'无已连接客户端', noView:'未选择画面',
+    noTitle:'无标题', dragReorder:'拖动排序', live:'串流中',
+    diskLine:'磁盘',
+    fmtJpeg:'格式: JPEG', fmtPng:'格式: PNG（无损）', fmtH264:'格式: H.264（硬件）',
+    noWebCodecs:'无 WebCodecs — 请用最新 Chrome/Edge',
+    h264Unsupported:'浏览器不支持 H.264 — 请改用 JPG',
+    h264DecodeErr:'H.264 解码错误 — 请求关键帧…',
+    h264Ok:'H.264 稳定模式', h264Fail:'H.264 设置失败 — 使用 JPG',
+    presetFast:'流畅 · JPEG 20fps', presetBal:'均衡 · JPEG 30fps',
+    presetLive:'直播 · H.264 30fps 低延迟',
+    jpegQ:'JPEG 画质', pngLossless:'PNG 无损', h264Auto:'H.264 码率由服务器自动'
   },
   de: {
     menu:'Liste', menuTitle:'Fenster & Apps', sideTitle:'Fenster · Apps', close:'Schließen',
@@ -137,7 +193,21 @@ const I18N = {
     imeKo:'Hangul — Klick für Latein', imeEn:'Latein — Klick für Hangul',
     fitDevice:'Ansicht: Gerät', fitAll:'Ansicht: alles',
     resFit:'Auflösung', qhint:'Apps mit + anheften',
-    qhintEdit:' · Bearbeiten zum Entfernen', lang:'Sprache', disk:'Disk'
+    qhintEdit:' · Bearbeiten zum Entfernen', lang:'Sprache', disk:'Disk',
+    remove:'Entfernen', unpinBody:' vom Schnellstart entfernen?',
+    closeWinTitle:'Fenster schließen', closeWinBody:' wird geschlossen. Andere Fenster der App bleiben.',
+    noWindows:'Keine offenen Fenster.<br>App im Apps-Tab starten.',
+    noClients:'Keine verbundenen Clients', noView:'Kein Bildschirm',
+    noTitle:'Ohne Titel', dragReorder:'Ziehen zum Sortieren', live:'Streaming',
+    diskLine:'Disk',
+    fmtJpeg:'Format: JPEG', fmtPng:'Format: PNG (verlustfrei)', fmtH264:'Format: H.264 (Hardware)',
+    noWebCodecs:'Kein WebCodecs — Chrome/Edge aktuell nötig',
+    h264Unsupported:'Kein H.264 WebCodecs — JPG verwenden',
+    h264DecodeErr:'H.264-Dekodierfehler — Keyframe…',
+    h264Ok:'H.264 stabil', h264Fail:'H.264-Setup fehlgeschlagen — JPG',
+    presetFast:'Schnell · JPEG 20fps', presetBal:'Ausgewogen · JPEG 30fps',
+    presetLive:'Live · H.264 30fps niedrige Latenz',
+    jpegQ:'JPEG-Qualität', pngLossless:'PNG verlustfrei', h264Auto:'H.264-Bitrate automatisch'
   },
   fr: {
     menu:'Liste', menuTitle:'Fenêtres et apps', sideTitle:'Fenêtres · Apps', close:'Fermer',
@@ -164,7 +234,21 @@ const I18N = {
     imeKo:'Hangul — clic pour latin', imeEn:'Latin — clic pour hangul',
     fitDevice:'Vue : appareil', fitAll:'Vue : tout',
     resFit:'Résolution', qhint:'Épingler les apps avec +',
-    qhintEdit:' · modifier pour retirer', lang:'Langue', disk:'Disque'
+    qhintEdit:' · modifier pour retirer', lang:'Langue', disk:'Disque',
+    remove:'Retirer', unpinBody:'Retirer du lancement rapide ?',
+    closeWinTitle:'Fermer la fenêtre', closeWinBody:' sera fermée. Les autres fenêtres de l’app restent.',
+    noWindows:'Aucune fenêtre ouverte.<br>Lancez une app dans l’onglet Apps.',
+    noClients:'Aucun client connecté', noView:'Aucun écran',
+    noTitle:'Sans titre', dragReorder:'Glisser pour réordonner', live:'En direct',
+    diskLine:'Disque',
+    fmtJpeg:'Format : JPEG', fmtPng:'Format : PNG (sans perte)', fmtH264:'Format : H.264 (matériel)',
+    noWebCodecs:'Pas de WebCodecs — Chrome/Edge récent requis',
+    h264Unsupported:'H.264 non supporté — passer en JPG',
+    h264DecodeErr:'Erreur décodage H.264 — image clé…',
+    h264Ok:'H.264 mode stable', h264Fail:'Échec H.264 — utiliser JPG',
+    presetFast:'Rapide · JPEG 20fps', presetBal:'Équilibré · JPEG 30fps',
+    presetLive:'Live · H.264 30fps faible latence',
+    jpegQ:'Qualité JPEG', pngLossless:'PNG sans perte', h264Auto:'Débit H.264 automatique'
   }
 };
 
@@ -192,6 +276,18 @@ function setLang(code){
   localStorage.setItem('webdock.lang', code);
   document.documentElement.lang = code === 'zh' ? 'zh-CN' : code;
   applyI18n();
+  // Re-render dynamic lists so titles/hints update
+  try { renderQuick(); } catch(_){}
+  try { if (typeof render === 'function') render(); } catch(_){}
+  try { if (typeof renderClients === 'function') renderClients(window._lastClients || []); } catch(_){}
+  try { syncClipAutoBtn(); applyIMEState(imeKorean); } catch(_){}
+  try {
+    if (typeof streamPreset !== 'undefined') {
+      // refresh preset status label in current language
+      const map = { fast:'presetFast', balanced:'presetBal', broadcast:'presetLive' };
+      // only rewrite if looks like a preset status
+    }
+  } catch(_){}
   const sel = document.getElementById('langSelect');
   if (sel) sel.value = code;
 }
@@ -211,23 +307,21 @@ function applyI18n(){
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
     el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
   });
-  // dynamic labels that use classes
   const cancel = document.getElementById('modalCancel');
   if (cancel) cancel.textContent = t('cancel');
   const ok = document.getElementById('modalOk');
   if (ok && !modalResolve) ok.textContent = t('confirm');
   const qeb = document.getElementById('quickEditBtn');
-  if (qeb) qeb.textContent = quickEdit ? t('done') : t('edit');
-  const menuBtn = document.getElementById('menuBtn');
-  if (menuBtn && !document.body.classList.contains('side-open')) {
-    // mobile closed label
-  }
-  syncClipAutoBtn();
-  applyIMEState(imeKorean);
+  if (qeb) qeb.textContent = (typeof quickEdit !== 'undefined' && quickEdit) ? t('done') : t('edit');
   const themeBtn = document.getElementById('themeBtn');
   if (themeBtn) {
     const light = document.documentElement.classList.contains('light');
     themeBtn.title = light ? t('themeDark') : t('themeLight');
+  }
+  const menuBtn = document.getElementById('menuBtn');
+  if (menuBtn) {
+    const open = document.body.classList.contains('side-open') || document.body.classList.contains('side-drawer-open');
+    // keep current open/close label if mobile uses toggle
   }
 }
 
