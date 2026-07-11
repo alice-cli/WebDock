@@ -35,21 +35,21 @@ enum MouseInjection {
         injectLock.lock()
         defer { injectLock.unlock() }
 
-        // Raise only on first click of a multi-click sequence.
-        // Re-raise on click 2/3 breaks AppKit double-click; also skip on move/up.
-        if phase == .down && count <= 1 {
-            let wasFront = WindowFocus.isTopmostOnScreen(windowID: window.windowID)
-                && NSRunningApplication.current.processIdentifier != pid
-                && NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
-            WindowFocus.ensureFocused(
-                pid: pid,
-                windowID: window.windowID,
-                title: window.title,
-                force: true
-            )
-            // First activation: give window server a beat so the click isn't eaten.
-            if !wasFront {
-                usleep(20_000)
+        // Always bring target forward when covered by another app; otherwise
+        // CGEvent hits the covering window and "clicks don't work".
+        // Double-click (count≥2): only raise if still not ready (avoid thrash).
+        if phase == .down {
+            let ready = WindowFocus.isReadyForInput(pid: pid, windowID: window.windowID)
+            if !ready || count <= 1 {
+                let ok = WindowFocus.ensureFocused(
+                    pid: pid,
+                    windowID: window.windowID,
+                    title: window.title,
+                    force: true
+                )
+                if !ready || !ok {
+                    usleep(25_000)
+                }
             }
         }
 
@@ -111,7 +111,7 @@ enum MouseInjection {
         injectLock.lock()
         defer { injectLock.unlock() }
 
-        if !WindowFocus.isTopmostOnScreen(windowID: window.windowID) {
+        if !WindowFocus.isReadyForInput(pid: pid, windowID: window.windowID) {
             WindowFocus.ensureFocused(
                 pid: pid,
                 windowID: window.windowID,

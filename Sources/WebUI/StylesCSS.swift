@@ -226,6 +226,17 @@ let webDockCSS = """
   #themeBtn svg { width: 14px; height: 14px; display: block; flex-shrink: 0; }
   html.light #themeBtn .icon-sun { display: none; }
   html:not(.light) #themeBtn .icon-moon { display: none; }
+  .lang-wrap {
+    display: flex; align-items: center; margin-left: 2px; flex-shrink: 0;
+  }
+  .lang-wrap select {
+    appearance: none; -webkit-appearance: none;
+    background: var(--panel2); color: var(--text);
+    border: 1px solid var(--border); border-radius: var(--r);
+    font-size: 11px; font-weight: 650; padding: 4px 7px;
+    max-width: 92px; cursor: pointer;
+  }
+  .lang-wrap select:hover { border-color: var(--border-hover); }
   .iconbtn {
     background: transparent; border: 1px solid var(--border); color: var(--muted);
     border-radius: var(--r); width: 28px; height: 28px; cursor: pointer;

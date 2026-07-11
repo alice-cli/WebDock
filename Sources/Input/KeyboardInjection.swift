@@ -10,14 +10,14 @@ enum KeyboardInjection {
         guard !text.isEmpty || rep > 0 else { return }
 
         MouseInjection.withInputLock {
-            if !WindowFocus.isTopmostOnScreen(windowID: window.windowID) {
+            if !WindowFocus.isReadyForInput(pid: pid, windowID: window.windowID) {
                 WindowFocus.ensureFocused(
                     pid: pid,
                     windowID: window.windowID,
                     title: window.title,
                     force: true
                 )
-                usleep(8_000)
+                usleep(20_000)
             }
             for _ in 0..<rep {
                 postKey(keyCode: 51, command: false, shift: false, control: false, option: false)
@@ -42,16 +42,15 @@ enum KeyboardInjection {
         else { return }
 
         MouseInjection.withInputLock {
-            // 단축키일 때만 raise — 일반 타자 중 force focus는 조합/포커스를 깨뜨림.
-            if command || control {
-                if !WindowFocus.isTopmostOnScreen(windowID: window.windowID) {
-                    WindowFocus.ensureFocused(
-                        pid: pid,
-                        windowID: window.windowID,
-                        title: window.title,
-                        force: true
-                    )
-                }
+            // 다른 앱이 가리면 키도 먹히지 않음 → 가려져 있을 때만 raise.
+            // (이미 front면 조합 중 불필요한 raise 금지)
+            if !WindowFocus.isReadyForInput(pid: pid, windowID: window.windowID) {
+                WindowFocus.ensureFocused(
+                    pid: pid,
+                    windowID: window.windowID,
+                    title: window.title,
+                    force: true
+                )
             }
             postKey(
                 keyCode: keyCode,

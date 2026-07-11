@@ -22,11 +22,13 @@ let clipAuto = localStorage.getItem('webdock.clipAuto') !== '0'; // default ON
 function showConfirm({ title, body, okText, danger }){
   return new Promise(resolve => {
     const modal = document.getElementById('modal');
-    document.getElementById('modalTitle').textContent = title || '확인';
+    document.getElementById('modalTitle').textContent = title || t('confirm');
     document.getElementById('modalBody').textContent = body || '';
     const ok = document.getElementById('modalOk');
-    ok.textContent = okText || '확인';
+    ok.textContent = okText || t('confirm');
     ok.className = 'btn' + (danger === false ? '' : ' danger');
+    const cancel = document.getElementById('modalCancel');
+    if (cancel) cancel.textContent = t('cancel');
     modalResolve = resolve;
     modal.classList.add('open');
     ok.focus();
@@ -55,7 +57,7 @@ function toggleQuickEdit(){
   const btn = document.getElementById('quickEditBtn');
   if (btn) {
     btn.classList.toggle('on', quickEdit);
-    btn.textContent = quickEdit ? '완료' : '편집';
+    btn.textContent = quickEdit ? t('done') : t('edit');
   }
   if (!quickEdit) renderQuick();
 }
@@ -71,7 +73,7 @@ function applyTheme(theme){
   document.documentElement.classList.toggle('light', light);
   localStorage.setItem('webdock.theme', light ? 'light' : 'dark');
   const btn = document.getElementById('themeBtn');
-  if (btn) btn.title = light ? '다크 모드로 전환' : '라이트 모드로 전환';
+  if (btn) btn.title = light ? t('themeDark') : t('themeLight');
 }
 function toggleTheme(){
   applyTheme(document.documentElement.classList.contains('light') ? 'dark' : 'light');
@@ -133,9 +135,7 @@ function applyIMEState(korean){
   if (!btn) return;
   btn.classList.toggle('ko', imeKorean);
   btn.classList.toggle('en', !imeKorean);
-  btn.title = imeKorean
-    ? '현재: 한글(브라우저 조합) — 클릭하면 영문(A)'
-    : '현재: 영문(A) — 클릭하면 한글';
+  btn.title = imeKorean ? t('imeKo') : t('imeEn');
 }
 function flashIME(){
   const btn = document.getElementById('imeBtn');
@@ -164,7 +164,7 @@ function connect(){
   ws.binaryType = 'arraybuffer';
   ws.onopen = () => {
     dot.classList.add('on');
-    statusEl.textContent = '연결됨';
+    statusEl.textContent = t('connected');
     send({type:'apps'});
     send({type:'refresh'});
     send({type:'imeState'});
@@ -176,15 +176,15 @@ function connect(){
     // 403/auth failures: do not hammer reconnect with a bad token.
     if (ev.code === 1008 || ev.code === 1002 || ev.code === 1003) {
       clearStoredToken();
-      statusEl.textContent = '인증 실패 — 토큰을 확인하세요';
+      statusEl.textContent = t('authFail');
       // Hard reload gate so user can re-enter a clean token (no accumulation).
       setTimeout(() => { location.href = location.pathname; }, 600);
       return;
     }
-    statusEl.textContent = '연결 끊김 — 재시도 중…';
+    statusEl.textContent = t('disconnected');
     setTimeout(connect, 1000);
   };
-  ws.onerror = () => statusEl.textContent = '연결 오류';
+  ws.onerror = () => statusEl.textContent = t('connError');
   ws.onmessage = async (ev) => {
     if (typeof ev.data === 'string') {
       const m = JSON.parse(ev.data);
@@ -233,7 +233,7 @@ function connect(){
         // force=true: 수동 "가져오기" — 자동 OFF여도 적용
         if (clipAuto || m.force) applyRemoteClipboard(m);
       } else if (m.type === 'inputBusy') {
-        statusEl.textContent = m.message || '다른 곳에서 입력 중입니다';
+        statusEl.textContent = m.message || t('busy');
       } else if (m.type === 'h264config') {
         setupH264Decoder(m);
       }
@@ -328,7 +328,7 @@ function applyMobileResolution(){
   view.zoom = 1;
   view.panX = 0;
   view.panY = 0;
-  statusEl.textContent = '해상도 맞춤 ' + w + '×' + h;
+  statusEl.textContent = t('resFit') + ' ' + w + '×' + h;
   // 캡처 재시작 후 프레임 오면 꽉 참
   setTimeout(fitCanvas, 500);
 }
@@ -397,9 +397,9 @@ function resetViewAuto(){
   updateZoomHint();
   if (isMobileLayout()) {
     scheduleMobileResolution();
-    statusEl.textContent = '화면: 기기 해상도 맞춤';
+    statusEl.textContent = t('fitDevice');
   } else {
-    statusEl.textContent = '화면: 전체 맞춤';
+    statusEl.textContent = t('fitAll');
   }
 }
 
@@ -471,7 +471,7 @@ function pinApp(a){
   if (!quick.find(q => q.path===a.path)){
     quick.push({name:a.name, path:a.path});
     saveQuick(); renderQuick(); updateBadges();
-    statusEl.textContent = '고정됨: ' + a.name;
+    statusEl.textContent = t('pinned') + ': ' + a.name;
   }
 }
 function pinFromWindow(w){
@@ -479,7 +479,7 @@ function pinFromWindow(w){
   else {
     const match = appList.find(a => a.name === w.name);
     if (match) pinApp(match);
-    else statusEl.textContent = '고정 실패: ' + w.name + ' 경로를 찾을 수 없음';
+    else statusEl.textContent = t('pinFail') + ': ' + w.name;
   }
 }
 
@@ -489,7 +489,7 @@ function renderQuick(){
   q.innerHTML = '';
   updateBadges();
   if (!quick.length){
-    q.innerHTML = '<div class="qhint">앱 탭에서 + 로 자주 쓰는 앱을 고정하세요'+(quickEdit ? '' : ' · 삭제는 편집')+'</div>';
+    q.innerHTML = '<div class="qhint">'+t('qhint')+(quickEdit ? '' : t('qhintEdit'))+'</div>';
     return;
   }
   quick.forEach((item) => {
@@ -507,12 +507,12 @@ function renderQuick(){
     x.type = 'button';
     x.className = 'chip-x';
     x.textContent = '×';
-    x.title = '고정 해제';
+    x.title = t('unpin');
     x.onclick = async (e) => {
       e.stopPropagation();
       e.preventDefault();
       const ok = await showConfirm({
-        title: '고정 해제',
+        title: t('unpin'),
         body: item.name + '을(를) 퀵 런처에서 제거할까요?',
         okText: '제거',
         danger: true
@@ -540,7 +540,7 @@ function launchAppPath(path, name, newInstance){
   _launchBusyUntil = now + 800;
   send({type:'launch', path:path, newInstance: !!newInstance});
   pendingApp = name || null;
-  statusEl.textContent = (name || '앱') + (newInstance ? ' 새 창 여는 중…' : ' 실행 중…');
+  statusEl.textContent = (name || 'app') + ' — ' + (newInstance ? t('newInstance') : t('launching'));
   if (isMobileLayout()) closeSidebar();
 }
 // 호버 시 상세 (body 고정 레이어 — 사이드바 overflow에 안 잘림)
@@ -657,7 +657,7 @@ function selectWindow(w){
     h264WaitingKey = true;
     send({type:'keyframe', id:w.id});
   }
-  statusEl.textContent = '스트리밍: '+w.name+(w.title ? ' — '+w.title : '');
+  statusEl.textContent = t('streaming')+': '+w.name+(w.title ? ' — '+w.title : '');
   cv.focus();
   // 모바일: 창 고르면 메뉴 닫고 → 원격 창을 폰 해상도로 맞춤
   if (isMobileLayout()) {
@@ -678,7 +678,7 @@ function setMode(m){
 function refreshList(){
   if (mode==='apps') send({type:'apps'});
   else send({type:'refresh'});
-  statusEl.textContent = '목록 새로고침 중…';
+  statusEl.textContent = t('refreshList');
 }
 
 // ---- 목록 순서 (드래그 앤 드롭) ----
@@ -785,7 +785,7 @@ function render(){
   listEl.innerHTML = '';
   const wrap = document.createElement('div'); wrap.className = 'search-wrap';
   const s = document.createElement('input');
-  s.className = 'search'; s.id = 'winSearch'; s.placeholder = '창 · 앱 이름 검색…'; s.value = winQuery;
+  s.className = 'search'; s.id = 'winSearch'; s.placeholder = t('searchWin'); s.value = winQuery;
   s.addEventListener('input', () => { winQuery = s.value; renderItemsOnly(); });
   wrap.appendChild(s); listEl.appendChild(wrap);
   const items = document.createElement('div'); items.id = 'winItems'; listEl.appendChild(items);
@@ -801,7 +801,7 @@ function renderItemsOnly(){
     return;
   }
   if (!filtered.length){
-    items.innerHTML = '<div class="hint">검색 결과가 없습니다</div>';
+    items.innerHTML = '<div class="hint">'+t('noSearch')+'</div>';
     return;
   }
   filtered.forEach(w => {
@@ -816,7 +816,7 @@ function renderItemsOnly(){
       + iconHTML(w.name, w.path)
       + '<span class="info"><span class="name">'+esc(w.name)+'</span><span class="title">'+esc(w.title||'제목 없음')+'</span>'+size+'</span>'
       + live;
-    const pin = document.createElement('button'); pin.type = 'button'; pin.className = 'act q'; pin.textContent = '☆'; pin.title = '퀵 런처에 고정';
+    const pin = document.createElement('button'); pin.type = 'button'; pin.className = 'act q'; pin.textContent = '☆'; pin.title = t('pinQuick');
     pin.draggable = false;
     pin.onclick = (ev) => { ev.stopPropagation(); pinFromWindow(w); };
     // 같은 앱 새 인스턴스 (Terminal 추가 창 등)
@@ -857,7 +857,7 @@ function renderItemsOnly(){
           cv.style.display = 'none';
           emptyEl.style.display = 'flex';
         }
-        statusEl.textContent = '창 닫는 중…';
+        statusEl.textContent = t('closing');
       };
       el.appendChild(x);
     }
@@ -891,12 +891,12 @@ function buildAppsUI(){
   listEl.innerHTML = '';
   const wrap = document.createElement('div'); wrap.className = 'search-wrap';
   const s = document.createElement('input');
-  s.className = 'search'; s.id = 'appSearch'; s.placeholder = '앱 검색…'; s.value = appQuery;
+  s.className = 'search'; s.id = 'appSearch'; s.placeholder = t('searchApp'); s.value = appQuery;
   s.addEventListener('input', () => { appQuery = s.value; renderAppItems(); });
   wrap.appendChild(s); listEl.appendChild(wrap);
   const items = document.createElement('div'); items.id = 'appItems';
   listEl.appendChild(items);
-  if (!appList.length) items.innerHTML = '<div class="hint">앱 목록을 불러오는 중…</div>';
+  if (!appList.length) items.innerHTML = '<div class="hint">'+t('loadingApps')+'</div>';
   else renderAppItems();
   requestAnimationFrame(() => s.focus());
 }
@@ -904,7 +904,7 @@ function renderAppItems(){
   const items = document.getElementById('appItems'); if (!items) return;
   const filtered = filteredApps();
   items.innerHTML = '';
-  if (!filtered.length){ items.innerHTML = '<div class="hint">검색 결과가 없습니다</div>'; return; }
+  if (!filtered.length){ items.innerHTML = '<div class="hint">'+t('noSearch')+'</div>'; return; }
   filtered.forEach(a => {
     const el = document.createElement('button');
     el.type = 'button';
@@ -913,7 +913,7 @@ function renderAppItems(){
     el.innerHTML = '<span class="drag-handle" title="드래그하여 순서 변경">⠿</span>'
       + iconHTML(a.name, a.path)
       + '<span class="info"><span class="name">'+esc(a.name)+'</span></span>';
-    const pin = document.createElement('button'); pin.type = 'button'; pin.className = 'act q'; pin.textContent = '☆'; pin.title = '퀵 런처에 고정';
+    const pin = document.createElement('button'); pin.type = 'button'; pin.className = 'act q'; pin.textContent = '☆'; pin.title = t('pinQuick');
     pin.draggable = false;
     pin.onclick = (ev) => { ev.stopPropagation(); pinApp(a); };
     // 이미 실행 중이어도 새 인스턴스
@@ -978,7 +978,7 @@ function syncMenuBtn(){
   if (!btn) return;
   const open = !document.body.classList.contains('side-collapsed');
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  btn.textContent = open ? '닫기' : '목록';
+  btn.textContent = open ? t('close') : t('menu');
 }
 function toggleBar(){
   document.body.classList.toggle('bar-collapsed');
@@ -1288,11 +1288,11 @@ async function pasteClipboardToRemote(){
   try {
     if (navigator.clipboard && navigator.clipboard.readText) {
       const t = await navigator.clipboard.readText();
-      if (t) { send({type:'text', value:t}); statusEl.textContent = '붙여넣기 ('+t.length+'자)'; return; }
+      if (t) { send({type:'text', value:t}); statusEl.textContent = t('paste')+' ('+t.length+')'; return; }
     }
-  } catch (_) { /* 권한 거부 → 원격 Cmd+V 폴백 */ }
+  } catch (_) { /* clipboard denied → remote Cmd+V */ }
   send({type:'key', code:'KeyV', meta:true, ctrl:false, alt:false, shift:false});
-  statusEl.textContent = '원격 붙여넣기 (Mac 클립보드)';
+  statusEl.textContent = t('pasteRemote');
 }
 
 let lastRemoteClip = '';
@@ -1302,24 +1302,20 @@ function toggleClipAuto(){
   localStorage.setItem('webdock.clipAuto', clipAuto ? '1' : '0');
   syncClipAutoBtn();
   send({type:'clipAuto', value: clipAuto});
-  statusEl.textContent = clipAuto
-    ? '클립보드 자동 가져오기 ON'
-    : '클립보드 자동 가져오기 OFF';
+  statusEl.textContent = clipAuto ? t('clipOn') : t('clipOff');
 }
 function syncClipAutoBtn(){
   const btn = document.getElementById('clipAutoBtn');
   if (!btn) return;
   btn.classList.toggle('on', clipAuto);
   btn.setAttribute('aria-pressed', clipAuto ? 'true' : 'false');
-  btn.textContent = clipAuto ? '📋 자동' : '📋 수동';
-  btn.title = clipAuto
-    ? '클립보드 자동 가져오기 ON — 원격 복사 시 이 기기로 가져옴 (클릭하여 끔)'
-    : '클립보드 자동 가져오기 OFF (클릭하여 켬)';
+  btn.textContent = clipAuto ? t('clipAutoOn') : t('clipAutoOff');
+  btn.title = clipAuto ? t('clipOn') : t('clipOff');
 }
 
 /** 수동: 원격 Mac 클립보드 현재 내용 요청 (유저 제스처 → write 권한 유리) */
 function pullRemoteClipboard(){
-  statusEl.textContent = '원격 클립보드 가져오는 중…';
+  statusEl.textContent = t('clipPulling');
   // 이 클릭이 유저 제스처이므로, 응답 후 writeText 성공할 확률 ↑
   window._clipPullExpect = true;
   send({type:'clipboardGet'});
@@ -1333,21 +1329,19 @@ async function applyRemoteClipboard(m){
   if (!clipAuto && !m.force && !fromManual) return;
 
   if (!t) {
-    statusEl.textContent = '원격 클립보드 비어 있음 (텍스트 없음 — 원격에서 복사 후 다시 시도)';
+    statusEl.textContent = t('clipEmpty');
     return;
   }
   lastRemoteClip = t;
 
-  // 1) Clipboard API
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(t);
-      statusEl.textContent = '원격 복사 → 이 기기 클립보드 ('+t.length+'자)';
+      statusEl.textContent = t('clipOk')+' ('+t.length+')';
       return;
     }
   } catch (_) { /* fall through */ }
 
-  // 2) execCommand 폴백
   try {
     const ta = document.createElement('textarea');
     ta.value = t;
@@ -1360,20 +1354,19 @@ async function applyRemoteClipboard(m){
     const ok = document.execCommand('copy');
     document.body.removeChild(ta);
     if (ok) {
-      statusEl.textContent = '원격 복사 → 이 기기 클립보드 ('+t.length+'자)';
+      statusEl.textContent = t('clipOk')+' ('+t.length+')';
       return;
     }
   } catch (_) { /* fall through */ }
 
-  // 3) 브라우저가 막으면 입력칸에 넣어 사용자가 복사 가능하게
   const txt = document.getElementById('txt');
   if (txt) {
     txt.value = t;
     txt.focus();
     txt.select();
-    statusEl.textContent = '클립보드 쓰기 막힘 → 입력칸에 '+t.length+'자 넣음 (Cmd+C로 복사)';
+    statusEl.textContent = t('clipBlocked')+' ('+t.length+')';
   } else {
-    statusEl.textContent = '원격 텍스트 '+t.length+'자 수신 — 클립보드 쓰기 실패';
+    statusEl.textContent = t('clipBlocked')+' ('+t.length+')';
   }
 }
 
@@ -1781,7 +1774,7 @@ document.addEventListener('paste', e => {
   if (!t) return;
   e.preventDefault();
   send({type:'text', value:t});
-  statusEl.textContent = '붙여넣기 ('+t.length+'자)';
+  statusEl.textContent = t('paste')+' ('+t.length+')';
   cv.focus();
 });
 
@@ -2040,5 +2033,11 @@ window.addEventListener('mouseup', () => { rz = false; });
 renderQuick();
 updateBadges();
 syncClipAutoBtn();
+// Language UI
+try {
+  const sel = document.getElementById('langSelect');
+  if (sel) sel.value = lang;
+  applyI18n();
+} catch (_) {}
 connect();
 """
