@@ -25,7 +25,8 @@ final class AppController: NSObject, NSApplicationDelegate {
 
         config = AppConfig.loadOrDefault()
         applyEnvOverrides()
-        // Do NOT auto-start the HTTP server — user turns it on from settings or menu.
+        // Auto-start only if user previously left the server toggle ON (default is off).
+        startServerIfEnabled()
         updateStatusItem()
         openSettings(isFirstRun: !AppConfig.exists)
     }

@@ -5,7 +5,9 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
     private var config: AppConfig
     private let onApply: (AppConfig) -> Void
 
-    private let serverToggle = NSButton(checkboxWithTitle: "서버 사용 (On/Off)", target: nil, action: nil)
+    /// macOS switch (not checkbox) — default off; when left on, auto-starts next launch.
+    private let serverSwitch = NSSwitch()
+    private let serverSwitchLabel = NSTextField(labelWithString: "서버")
     private let lanToggle = NSButton(checkboxWithTitle: "외부 접근 허용 (LAN)", target: nil, action: nil)
     private let ipListToggle = NSButton(checkboxWithTitle: "IP 허용 목록 사용", target: nil, action: nil)
     private let statusLabel = NSTextField(labelWithString: "")
@@ -64,7 +66,8 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
     }
 
     func syncServerToggle(enabled: Bool) {
-        serverToggle.state = enabled ? .on : .off
+        serverSwitch.state = enabled ? .on : .off
+        updateStatusLabel(running: nil)
     }
 
     /// Reload form from disk/config without recreating the window.
@@ -100,9 +103,22 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
         ])
 
         root.addArrangedSubview(sectionLabel("서버"))
-        serverToggle.target = self
-        serverToggle.action = #selector(serverToggleChanged)
-        root.addArrangedSubview(serverToggle)
+        let serverRow = NSStackView()
+        serverRow.orientation = .horizontal
+        serverRow.alignment = .centerY
+        serverRow.spacing = 10
+        serverSwitchLabel.font = NSFont.systemFont(ofSize: 13)
+        serverSwitch.target = self
+        serverSwitch.action = #selector(serverToggleChanged)
+        // Leading label + trailing switch (common macOS settings layout)
+        serverRow.addArrangedSubview(serverSwitchLabel)
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        serverRow.addArrangedSubview(spacer)
+        serverRow.addArrangedSubview(serverSwitch)
+        serverRow.translatesAutoresizingMaskIntoConstraints = false
+        serverRow.widthAnchor.constraint(equalTo: root.widthAnchor, constant: -8).isActive = true
+        root.addArrangedSubview(serverRow)
 
         statusLabel.font = NSFont.systemFont(ofSize: 11)
         statusLabel.textColor = .secondaryLabelColor
@@ -183,7 +199,7 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
         urlScroll.widthAnchor.constraint(greaterThanOrEqualToConstant: 460).isActive = true
         root.addArrangedSubview(urlScroll)
 
-        let hint = NSTextField(wrappingLabelWithString: "「저장 및 적용」해도 창은 닫히지 않습니다. 서버 On/Off로 바로 켜고 끌 수 있습니다. 토큰·도메인·IP 필터는 적용 후 접속에 반영됩니다.")
+        let hint = NSTextField(wrappingLabelWithString: "서버 토글은 바로 적용됩니다. 켜 두면 다음에 앱을 실행해도 자동으로 서버가 시작됩니다. 토큰·도메인·IP는 「저장 및 적용」 후 반영됩니다.")
         hint.textColor = .secondaryLabelColor
         hint.font = NSFont.systemFont(ofSize: 11)
         hint.preferredMaxLayoutWidth = 470
@@ -249,7 +265,7 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
     }
 
     private func loadFromConfig() {
-        serverToggle.state = config.serverEnabled ? .on : .off
+        serverSwitch.state = config.serverEnabled ? .on : .off
         lanToggle.state = config.allowLAN ? .on : .off
         ipListToggle.state = config.ipAllowlistEnabled ? .on : .off
         portField.stringValue = String(config.port)
@@ -262,23 +278,22 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
     }
 
     private func updateStatusLabel(running: Bool?) {
-        let enabled = serverToggle.state == .on
+        let enabled = serverSwitch.state == .on
         if let running {
             if running {
-                statusLabel.stringValue = "상태: 서버 실행 중 — 끄려면 토글을 끄세요"
+                statusLabel.stringValue = "상태: 켜짐 (실행 중) — 끄면 서버 중지 · 다음 실행에도 유지"
                 statusLabel.textColor = .systemGreen
             } else if enabled {
-                // Toggle on but not running yet (e.g. just launched) — one flip or Apply starts it
-                statusLabel.stringValue = "상태: 대기 — 토글을 끄고 다시 켜거나, 적용을 누르면 시작"
+                statusLabel.stringValue = "상태: 켜짐 (시작 중…)"
                 statusLabel.textColor = .systemOrange
             } else {
-                statusLabel.stringValue = "상태: 서버 꺼짐 — 토글을 켜면 시작됩니다"
+                statusLabel.stringValue = "상태: 꺼짐 — 켜 두면 다음 실행 때 자동 시작"
                 statusLabel.textColor = .secondaryLabelColor
             }
         } else {
             statusLabel.stringValue = enabled
-                ? "상태: 토글을 켜면 서버가 시작됩니다"
-                : "상태: 서버 꺼짐"
+                ? "상태: 켜짐 — 저장되면 자동 시작"
+                : "상태: 꺼짐 (기본)"
             statusLabel.textColor = .secondaryLabelColor
         }
     }
@@ -382,7 +397,7 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
     }
 
     private func applyFormToConfig() {
-        config.serverEnabled = serverToggle.state == .on
+        config.serverEnabled = serverSwitch.state == .on
         config.allowLAN = lanToggle.state == .on
         config.ipAllowlistEnabled = ipListToggle.state == .on
         if let p = UInt16(portField.stringValue.trimmingCharacters(in: .whitespaces)), p > 0 {
