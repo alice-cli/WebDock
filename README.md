@@ -117,6 +117,19 @@ chmod +x build_app.sh install_home.sh setup_dev_cert.sh
 
 ---
 
+## 미리 빌드된 앱 (Release)
+
+[Releases](https://github.com/alice-cli/WebDock/releases) 에서  
+**공증(Notarized)된** `WebDock-macOS-*.zip` 을 받을 수 있습니다.
+
+1. zip 다운로드 → 압축 해제  
+2. `WebDock.app` 실행  
+3. 화면 기록 / 손쉬운 사용 허용  
+
+GitHub Actions가 태그(`v*`) 푸시 또는 수동 실행 시 빌드·서명·공증 후 Release에 올립니다.
+
+---
+
 ## 빌드만 하기
 
 ```bash
@@ -126,6 +139,9 @@ swift build -c release
 # .app 번들 생성 (아이콘 포함, codesign)
 ./build_app.sh
 # → ./WebDock.app
+
+# (로컬) Developer ID + 공증 — notary.env 필요
+./release_notarize.sh
 ```
 
 `build_app.sh`가 하는 일:
@@ -134,6 +150,8 @@ swift build -c release
 2. `MacRemote.png` → Dock 아이콘(`.icns`) + 웹 파비콘  
 3. `WebDock.app` 구성 + `Info.plist`  
 4. 가능하면 **WebDock Dev** 로컬 인증서로 서명, 없으면 ad-hoc 서명  
+   (`SKIP_SIGN=1` 이면 서명 생략 — CI용)  
+
 
 ---
 

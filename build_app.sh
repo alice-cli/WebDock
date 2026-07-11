@@ -124,18 +124,22 @@ sign_stable() {
   codesign --force --sign "$id" --keychain "$KC_PATH" --timestamp=none "$APP"
 }
 
-echo "signing…"
-if sign_stable; then
-  if codesign -d -r- "$APP" 2>&1 | grep -q 'certificate root'; then
-    echo "signed stable (certificate-based designated requirement) ✓"
-  else
-    echo "signed (check: codesign -dv $APP)"
-  fi
+# CI / release_notarize: SKIP_SIGN=1 이면 서명 생략 (나중에 Developer ID 로 서명)
+if [[ "${SKIP_SIGN:-0}" == "1" ]]; then
+  echo "signing skipped (SKIP_SIGN=1)"
 else
-  echo "WARNING: stable keychain missing — run ./setup_dev_cert.sh"
-  echo "  Falling back to ad-hoc (permissions reset every build)."
-  codesign --force --sign - "$APP"
+  echo "signing…"
+  if sign_stable; then
+    if codesign -d -r- "$APP" 2>&1 | grep -q 'certificate root'; then
+      echo "signed stable (certificate-based designated requirement) ✓"
+    else
+      echo "signed (check: codesign -dv $APP)"
+    fi
+  else
+    echo "WARNING: stable keychain missing — run ./setup_dev_cert.sh"
+    echo "  Falling back to ad-hoc (permissions reset every build)."
+    codesign --force --sign - "$APP"
+  fi
+  codesign -dv "$APP" 2>&1 | grep -E 'Authority|Signature|flags|Identifier' || true
 fi
-
-codesign -dv "$APP" 2>&1 | grep -E 'Authority|Signature|flags|Identifier' || true
 echo "built: $APP"

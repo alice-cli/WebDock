@@ -3,6 +3,8 @@
 *.xcodeproj
 .swiftpm/
 WebDock.app/
+WebDock-notarize.zip
+dist/
 *.dSYM/
 
 # macOS
