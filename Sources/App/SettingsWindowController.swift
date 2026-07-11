@@ -103,21 +103,17 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
         ])
 
         root.addArrangedSubview(sectionLabel("서버"))
+        // Label + NSSwitch only — no extra width constraints (those crashed on activate).
         let serverRow = NSStackView()
         serverRow.orientation = .horizontal
         serverRow.alignment = .centerY
-        serverRow.spacing = 10
+        serverRow.spacing = 12
         serverSwitchLabel.font = NSFont.systemFont(ofSize: 13)
+        serverSwitchLabel.stringValue = "서버"
         serverSwitch.target = self
         serverSwitch.action = #selector(serverToggleChanged)
-        // Leading label + trailing switch (common macOS settings layout)
         serverRow.addArrangedSubview(serverSwitchLabel)
-        let spacer = NSView()
-        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        serverRow.addArrangedSubview(spacer)
         serverRow.addArrangedSubview(serverSwitch)
-        serverRow.translatesAutoresizingMaskIntoConstraints = false
-        serverRow.widthAnchor.constraint(equalTo: root.widthAnchor, constant: -8).isActive = true
         root.addArrangedSubview(serverRow)
 
         statusLabel.font = NSFont.systemFont(ofSize: 11)
