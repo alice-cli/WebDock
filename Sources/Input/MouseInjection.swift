@@ -35,30 +35,33 @@ enum MouseInjection {
         injectLock.lock()
         defer { injectLock.unlock() }
 
-        // Always bring target forward when covered by another app; otherwise
-        // CGEvent hits the covering window and "clicks don't work".
-        // Double-click (count≥2): only raise if still not ready (avoid thrash).
-        if phase == .down {
-            let ready = WindowFocus.isReadyForInput(pid: pid, windowID: window.windowID)
-            if !ready || count <= 1 {
-                let ok = WindowFocus.ensureFocused(
-                    pid: pid,
-                    windowID: window.windowID,
-                    title: window.title,
-                    force: true
-                )
-                if !ready || !ok {
-                    usleep(25_000)
-                }
-            }
-        }
-
+        // Resolve click point first — raise must put *this* window on top of that pixel.
         let point = WindowGeometry.globalPoint(
             xFraction: xFraction,
             yFraction: yFraction,
             windowID: window.windowID,
             fallback: window.frame
         )
+
+        // CGEvent is hit-tested by z-order at `point`. If another app covers that
+        // pixel, the event is ignored by the target — always raise first.
+        if phase == .down {
+            let ready = WindowFocus.isReadyForInput(
+                pid: pid,
+                windowID: window.windowID,
+                at: point
+            )
+            if !ready || count <= 1 {
+                _ = WindowFocus.ensureFocused(
+                    pid: pid,
+                    windowID: window.windowID,
+                    title: window.title,
+                    force: true,
+                    at: point
+                )
+            }
+        }
+
         postMouse(
             phase: phase,
             point: point,
@@ -111,21 +114,21 @@ enum MouseInjection {
         injectLock.lock()
         defer { injectLock.unlock() }
 
-        if !WindowFocus.isReadyForInput(pid: pid, windowID: window.windowID) {
-            WindowFocus.ensureFocused(
-                pid: pid,
-                windowID: window.windowID,
-                title: window.title,
-                force: true
-            )
-        }
-
         let point = WindowGeometry.globalPoint(
             xFraction: xFraction,
             yFraction: yFraction,
             windowID: window.windowID,
             fallback: window.frame
         )
+        if !WindowFocus.isReadyForInput(pid: pid, windowID: window.windowID, at: point) {
+            _ = WindowFocus.ensureFocused(
+                pid: pid,
+                windowID: window.windowID,
+                title: window.title,
+                force: true,
+                at: point
+            )
+        }
         postScroll(deltaX: deltaX, deltaY: deltaY, point: point)
     }
 

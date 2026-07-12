@@ -11,13 +11,12 @@ enum KeyboardInjection {
 
         MouseInjection.withInputLock {
             if !WindowFocus.isReadyForInput(pid: pid, windowID: window.windowID) {
-                WindowFocus.ensureFocused(
+                _ = WindowFocus.ensureFocused(
                     pid: pid,
                     windowID: window.windowID,
                     title: window.title,
                     force: true
                 )
-                usleep(20_000)
             }
             for _ in 0..<rep {
                 postKey(keyCode: 51, command: false, shift: false, control: false, option: false)
@@ -42,10 +41,9 @@ enum KeyboardInjection {
         else { return }
 
         MouseInjection.withInputLock {
-            // 다른 앱이 가리면 키도 먹히지 않음 → 가려져 있을 때만 raise.
-            // (이미 front면 조합 중 불필요한 raise 금지)
+            // Keys go to the frontmost app's focused window — raise target first.
             if !WindowFocus.isReadyForInput(pid: pid, windowID: window.windowID) {
-                WindowFocus.ensureFocused(
+                _ = WindowFocus.ensureFocused(
                     pid: pid,
                     windowID: window.windowID,
                     title: window.title,
