@@ -43,15 +43,15 @@ enum MouseInjection {
             fallback: window.frame
         )
 
-        // CGEvent is hit-tested by z-order at `point`. If another app covers that
-        // pixel, the event is ignored by the target — always raise first.
+        // CGEvent is hit-tested by z-order at `point`. Raise only when covered —
+        // every single-click used to force a full raise loop and caused input lag.
         if phase == .down {
             let ready = WindowFocus.isReadyForInput(
                 pid: pid,
                 windowID: window.windowID,
                 at: point
             )
-            if !ready || count <= 1 {
+            if !ready {
                 _ = WindowFocus.ensureFocused(
                     pid: pid,
                     windowID: window.windowID,

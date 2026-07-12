@@ -49,14 +49,14 @@ enum InputSource {
 
         // Soft focus only if target is covered — never Escape, never force-close paths.
         if let window, let pid = window.owningApplication?.processID {
-            if !WindowFocus.isTopmostOnScreen(windowID: window.windowID) {
+            if !WindowFocus.isRecentlyFocused(pid: pid, windowID: window.windowID),
+               !WindowFocus.isTopmostOnScreen(windowID: window.windowID) {
                 WindowFocus.ensureFocused(
                     pid: pid,
                     windowID: window.windowID,
                     title: window.title,
-                    force: true
+                    force: false
                 )
-                usleep(12_000)
             }
         }
 

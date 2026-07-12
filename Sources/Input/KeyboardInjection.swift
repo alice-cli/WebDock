@@ -10,17 +10,19 @@ enum KeyboardInjection {
         guard !text.isEmpty || rep > 0 else { return }
 
         MouseInjection.withInputLock {
-            if !WindowFocus.isReadyForInput(pid: pid, windowID: window.windowID) {
+            // Cache-first: typing must not pay CGWindowList / raise on every char.
+            if !WindowFocus.isRecentlyFocused(pid: pid, windowID: window.windowID),
+               !WindowFocus.isReadyForInput(pid: pid, windowID: window.windowID) {
                 _ = WindowFocus.ensureFocused(
                     pid: pid,
                     windowID: window.windowID,
                     title: window.title,
-                    force: true
+                    force: false
                 )
             }
             for _ in 0..<rep {
                 postKey(keyCode: 51, command: false, shift: false, control: false, option: false)
-                usleep(2_000)
+                usleep(1_000)
             }
             if !text.isEmpty {
                 postUnicodeString(text)
@@ -41,13 +43,14 @@ enum KeyboardInjection {
         else { return }
 
         MouseInjection.withInputLock {
-            // Keys go to the frontmost app's focused window — raise target first.
-            if !WindowFocus.isReadyForInput(pid: pid, windowID: window.windowID) {
+            // Keys go to the frontmost app — raise only when not recently focused.
+            if !WindowFocus.isRecentlyFocused(pid: pid, windowID: window.windowID),
+               !WindowFocus.isReadyForInput(pid: pid, windowID: window.windowID) {
                 _ = WindowFocus.ensureFocused(
                     pid: pid,
                     windowID: window.windowID,
                     title: window.title,
-                    force: true
+                    force: false
                 )
             }
             postKey(
@@ -101,7 +104,7 @@ enum KeyboardInjection {
         // Post per Character (extended grapheme) so each Hangul syllable is one event.
         for ch in normalized {
             postUnicode(ch)
-            usleep(1_500)
+            usleep(400)
         }
     }
 
@@ -115,7 +118,7 @@ enum KeyboardInjection {
         keyDown?.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: utf16)
         keyDown?.post(tap: .cgSessionEventTap)
 
-        usleep(1_000)
+        usleep(300)
 
         let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false)
         keyUp?.flags = []
@@ -143,7 +146,7 @@ enum KeyboardInjection {
         keyDown?.flags = flags
         keyDown?.post(tap: .cghidEventTap)
 
-        usleep(isShortcut ? 5_000 : 3_000)
+        usleep(isShortcut ? 2_000 : 800)
 
         let keyUp = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false)
         keyUp?.flags = isShortcut ? [] : flags

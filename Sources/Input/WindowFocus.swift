@@ -6,15 +6,47 @@ import CoreGraphics
 ///
 /// Synthetic mouse events use screen coordinates: whatever window is topmost **at that
 /// point** receives the click. Activating the app without raising the window is not enough.
+///
+/// Hot path is optimized for typing: after a successful raise, the same window is treated
+/// as focused for a short cache window so every key does not pay CGWindowList + sleep.
 enum WindowFocus {
     private static let cacheLock = NSLock()
     private static var lastPID: pid_t = 0
     private static var lastWindowID: CGWindowID = 0
     private static var lastAt: CFAbsoluteTime = 0
+    /// Trust a successful focus for this long without re-querying z-order.
+    private static let cacheTTL: CFAbsoluteTime = 0.45
+
+    /// True when the cache says this window was successfully focused very recently
+    /// and the same process is still frontmost (cheap — no CGWindowList).
+    static func isRecentlyFocused(pid: pid_t, windowID: CGWindowID) -> Bool {
+        cacheLock.lock()
+        let hit = lastPID == pid
+            && lastWindowID == windowID
+            && (CFAbsoluteTimeGetCurrent() - lastAt) < cacheTTL
+        cacheLock.unlock()
+        guard hit else { return false }
+        // Drop cache if the user switched away on the Mac.
+        return NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
+    }
 
     /// True when `windowID` is the frontmost layer-0 window covering `point` (or globally if point is nil)
     /// and its process is the frontmost app.
-    static func isReadyForInput(pid: pid_t, windowID: CGWindowID, at point: CGPoint? = nil) -> Bool {
+    ///
+    /// - Parameter useCache: When true (typing hot path), a recent successful focus may skip
+    ///   CGWindowList. After a raise, callers must pass `false` so verification is live.
+    static func isReadyForInput(
+        pid: pid_t,
+        windowID: CGWindowID,
+        at point: CGPoint? = nil,
+        useCache: Bool = true
+    ) -> Bool {
+        // Fast path: recent successful focus — skip expensive CGWindowList on every key.
+        // Point-based mouse hits always re-check z-order (clicks are less frequent).
+        if useCache, point == nil, isRecentlyFocused(pid: pid, windowID: windowID) {
+            return true
+        }
+
         if let point {
             guard topWindowID(at: point) == windowID else { return false }
         } else {
@@ -60,7 +92,10 @@ enum WindowFocus {
         return nil
     }
 
-    /// Bring target app + exact window to front. Retries until topmost or timeout.
+    /// Bring target app + exact window to front.
+    ///
+    /// Fast path: cache / already-ready → return immediately (no sleep).
+    /// Slow path: at most two short raises (~8ms settle each). AppleScript only when `force`.
     @discardableResult
     static func ensureFocused(
         pid: pid_t,
@@ -69,46 +104,46 @@ enum WindowFocus {
         force: Bool = false,
         at point: CGPoint? = nil
     ) -> Bool {
-        if !force, isReadyForInput(pid: pid, windowID: windowID, at: point) {
-            cacheLock.lock()
-            let cached =
-                lastPID == pid
-                && lastWindowID == windowID
-                && (CFAbsoluteTimeGetCurrent() - lastAt) < 0.5
-            cacheLock.unlock()
-            if cached { return true }
+        // 1) Cache hit (keyboard typing): zero cost.
+        if !force, point == nil, isRecentlyFocused(pid: pid, windowID: windowID) {
+            return true
         }
 
-        if isReadyForInput(pid: pid, windowID: windowID, at: point), force {
+        // 2) Already frontmost — remember and leave (live check, no cache).
+        if isReadyForInput(pid: pid, windowID: windowID, at: point, useCache: false) {
             remember(pid: pid, windowID: windowID)
             return true
         }
 
-        let deadline = CFAbsoluteTimeGetCurrent() + 0.25
-        var attempt = 0
-        while CFAbsoluteTimeGetCurrent() < deadline {
-            attempt += 1
-            hardRaise(pid: pid, windowID: windowID, title: title)
-            usleep(attempt == 1 ? 40_000 : 25_000)
-            if isReadyForInput(pid: pid, windowID: windowID, at: point) {
+        // 3) One raise + short settle.
+        hardRaise(pid: pid, windowID: windowID, title: title)
+        usleep(8_000)
+        if isReadyForInput(pid: pid, windowID: windowID, at: point, useCache: false) {
+            remember(pid: pid, windowID: windowID)
+            return true
+        }
+
+        // 4) Second raise only (still no long polling).
+        hardRaise(pid: pid, windowID: windowID, title: title)
+        usleep(8_000)
+        if isReadyForInput(pid: pid, windowID: windowID, at: point, useCache: false) {
+            remember(pid: pid, windowID: windowID)
+            return true
+        }
+
+        // 5) AppleScript only for explicit force (clicks / hard heal) — never on every key.
+        if force {
+            appleScriptActivate(pid: pid)
+            raiseWindow(pid: pid, windowID: windowID, title: title)
+            usleep(12_000)
+            if isReadyForInput(pid: pid, windowID: windowID, at: point, useCache: false) {
                 remember(pid: pid, windowID: windowID)
                 return true
             }
         }
 
-        // Last try + AppleScript activate (only if still covered)
-        hardRaise(pid: pid, windowID: windowID, title: title)
-        if !isReadyForInput(pid: pid, windowID: windowID, at: point) {
-            appleScriptActivate(pid: pid)
-            raiseWindow(pid: pid, windowID: windowID, title: title)
-            usleep(50_000)
-        }
-        let ok = isReadyForInput(pid: pid, windowID: windowID, at: point)
-        remember(pid: pid, windowID: windowID)
-        if !ok {
-            print("focus: still not front windowID=\(windowID) pid=\(pid) top=\(String(describing: topWindowID(at: point)))")
-        }
-        return ok
+        print("focus: still not front windowID=\(windowID) pid=\(pid) top=\(String(describing: topWindowID(at: point)))")
+        return false
     }
 
     private static func appleScriptActivate(pid: pid_t) {
